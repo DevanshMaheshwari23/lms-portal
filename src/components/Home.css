@@ -1,0 +1,344 @@
+/* General Layout */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f7f9fc; /* A clean, light background */
+}
+
+.home {
+  min-height: 100vh;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, #0066cc, #007bff);
+  color: white;
+  padding: 15px 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-left h2 {
+  margin: 0;
+  margin-right: 15px;
+  font-size: 1.5rem;
+}
+
+.greeting {
+  margin-left: 50px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  opacity: 0.9;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.profile-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid white;
+  transition: transform 0.2s ease;
+}
+
+.profile-icon:hover {
+  transform: scale(1.05);
+}
+
+/* Profile Section (Modal) */
+.profile-section {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 300px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1100;
+}
+
+.profile-section input {
+  width: 100%;
+  padding: 8px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: border-color 0.2s ease;
+}
+
+.profile-section input:focus {
+  border-color: #007bff;
+}
+
+.profile-section button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px;
+  width: 100%;
+  margin-top: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.profile-section button:hover {
+  background: #0056b3;
+}
+
+/* Course Section Container */
+.course-section {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.course-section h2 {
+  color: #333;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 5px;
+}
+
+.course-details h3 {
+  margin-top: 0;
+  color: #007bff;
+}
+
+/* Accordion-like Sections */
+.course-section-content {
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: #fafbfc;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.course-section-content:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Section Header (clickable) */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  cursor: pointer;
+  background: #f1f3f5;
+  border-bottom: 1px solid #ddd;
+}
+
+.section-header:hover {
+  background: #e9ecef;
+}
+
+.section-header h4 {
+  margin: 0;
+  color: #444;
+}
+
+/* Toggle Icon */
+.toggle-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background: #007bff;
+  mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><polyline points="4 8 10 14 16 8" fill="none" stroke="white" stroke-width="2"/></svg>') no-repeat center;
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><polyline points="4 8 10 14 16 8" fill="none" stroke="white" stroke-width="2"/></svg>') no-repeat center;
+  transition: transform 0.2s ease;
+}
+
+.section-header.active .toggle-icon {
+  transform: rotate(180deg);
+}
+
+/* Chapters List */
+.chapters-list {
+  background: #fff;
+  padding: 10px;
+}
+
+/* Individual Chapter */
+.chapter {
+  background: #f9f9f9;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  transition: transform 0.1s ease;
+}
+
+.chapter:hover {
+  transform: translateY(-2px);
+}
+
+/* Progress Container (Dark Theme) */
+.progress-container-dark {
+  padding: 16px;
+  border-radius: 8px;
+  max-width: 400px;
+  margin: 20px 0;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Progress Info (Text) */
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progress-text-dark {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.progress-percentage-dark {
+  font-size: 0.9rem;
+  color: #007bff;
+  font-weight: bold;
+}
+
+/* Progress Bar */
+.progress-bar-dark {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.progress-fill-dark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: #007bff;
+  width: 0; /* Will be controlled inline via JS */
+  transition: width 0.2s ease;
+}
+
+/* Chapter Header */
+.chapter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chapter-header h4 {
+  margin: 0;
+  color: #333;
+}
+
+/* Video Button & Icon */
+.video-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.2s ease;
+}
+
+.video-button:hover {
+  transform: scale(1.05);
+}
+
+.youtube-icon {
+  width: 28px;
+  height: 28px;
+}
+
+/* Modal Overlay for Video Playback */
+.video-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1200;
+}
+
+/* Modal Content Container */
+.video-modal-content {
+  width: 90%;
+  max-width: 800px;
+  height: 450px;
+  background: #000;
+  padding: 1em;
+  border-radius: 8px;
+  position: relative;
+}
+
+/* Close Modal Button */
+.close-modal {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  font-size: 1.5em;
+  color: white;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.close-modal:hover {
+  color: #ccc;
+}
+
+/* Sub-chapters Table */
+.subchapter-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.subchapter-table th,
+.subchapter-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.subchapter-table th {
+  background-color: #f2f2f2;
+  color: #333;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .course-section {
+    width: 95%;
+    padding: 15px;
+  }
+  .profile-section {
+    width: 90%;
+  }
+}

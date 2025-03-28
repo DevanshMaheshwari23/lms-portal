@@ -1,0 +1,313 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Arial", sans-serif;
+  }
+  
+  /* Page Container */
+  .register-page {
+    min-height: 100vh;
+    background: #f0f4ff;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Navbar */
+  .navbar {
+    width: 100%;
+    background-color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    padding: 0.75rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  
+  .navbar-left {
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    margin-right: 10px;
+  }
+  
+  .brand-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .nav-links {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+  }
+  
+  .nav-links li a {
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+  
+  .nav-links li a:hover {
+    color: #000;
+  }
+  
+  .enroll-btn {
+    background-color: #FF6B00;
+    color: #fff;
+    padding: 0.5rem 1.2rem;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  
+  .enroll-btn:hover {
+    background-color: #e65f00;
+  }
+  
+  /* Content Wrapper */
+  .content-wrapper {
+    display: flex;
+    flex: 1;
+    margin-top: 2rem;
+    padding: 0 2rem;
+    gap: 2rem;
+  }
+  
+  /* Left Section: Register Card */
+  .left-section {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .register-card {
+    width: 100%;
+    max-width: 500px;
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  
+  .register-card h2 {
+    margin-bottom: 1rem;
+    color: #333;
+  }
+  
+  .register-card label {
+    display: block;
+    margin: 0.75rem 0 0.25rem;
+    color: #555;
+    font-weight: 500;
+  }
+  
+  .register-card input {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  /* For additional registration fields (e.g., Confirm Password) */
+  .register-card .field-group {
+    margin-bottom: 1rem;
+  }
+  
+  /* Submit Button */
+  .register-btn {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.7rem;
+    background-color: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  
+  .register-btn:hover {
+    background-color: #2563eb;
+  }
+  
+  /* Link to Login */
+  .login-link {
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+  }
+  
+  .login-link a {
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  .login-link a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Right Section: Info & Hero Image */
+  .right-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    position: relative;
+    padding: 2rem 0;
+  }
+  
+  .info-badge {
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  
+  .badge-icon {
+    font-size: 1.5rem;
+    margin-right: 0.75rem;
+  }
+  
+  .badge-text span {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+    display: block;
+  }
+  
+  .badge-text p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  
+  .hero-image img {
+    max-width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+  
+  /* Responsive Carousel */
+  .carousel-image {
+    position: absolute;
+    top: 20%;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+  }
+  
+  .carousel-image.visible {
+    opacity: 1;
+  }
+  
+  /* -------- Responsive Design -------- */
+  
+  /* Tablets (max-width: 1024px) */
+  @media (max-width: 1024px) {
+    .content-wrapper {
+      flex-direction: column;
+      padding: 1rem;
+      gap: 1rem;
+    }
+  
+    .right-section {
+      align-items: center;
+      text-align: center;
+      padding: 1rem;
+    }
+  
+    .info-badge {
+      max-width: 80%;
+      text-align: center;
+    }
+  
+    .register-card {
+      max-width: 400px;
+      padding: 1.5rem;
+    }
+  }
+  
+  /* Phones (max-width: 768px) */
+  @media (max-width: 768px) {
+    .navbar {
+      flex-direction: row;
+      padding: 1rem;
+    }
+  
+    .nav-links {
+      flex-direction: row;
+      align-items: center;
+      gap: 1rem;
+    }
+  
+    .content-wrapper {
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+    }
+  
+    .left-section, .right-section {
+      width: 100%;
+    }
+  
+    .register-card {
+      max-width: 90%;
+      padding: 1rem;
+    }
+  
+    .hero-image img {
+      width: 100%;
+      max-height: 250px;
+    }
+  }
+  
+  /* Small Phones (max-width: 480px) */
+  @media (max-width: 480px) {
+    .navbar {
+      padding: 0.5rem;
+    }
+  
+    .brand-name {
+      font-size: 1rem;
+    }
+  
+    .enroll-btn {
+      padding: 0.4rem 1rem;
+      font-size: 0.9rem;
+    }
+  
+    .content-wrapper {
+      padding: 0.5rem;
+    }
+  
+    .register-card {
+      padding: 0.75rem;
+      max-width: 95%;
+    }
+  
+    .register-btn {
+      padding: 0.6rem;
+      font-size: 0.9rem;
+    }
+  }
+  
