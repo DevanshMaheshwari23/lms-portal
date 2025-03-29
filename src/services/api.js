@@ -1,13 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5001/api';
-
+// Create axios instance with default config
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/api',
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
-  },
+    'Content-Type': 'application/json'
+  }
 });
 
 // Request interceptor

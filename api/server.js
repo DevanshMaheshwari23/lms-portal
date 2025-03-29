@@ -18,9 +18,12 @@ const port = 5001;
 // Enable CORS and JSON parsing
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://lms-portal-4b77.vercel.app', 'https://*.vercel.app']
+    ? 'https://lms-portal-4b77.vercel.app'
     : 'http://localhost:5173',
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 app.use(bodyParser.json());
 
@@ -31,7 +34,9 @@ app.use(session({
   saveUninitialized: false,
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
 
