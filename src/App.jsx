@@ -8,10 +8,8 @@ import RegisterPage from './components/Register';
 import ForgotPassword from './components/ForgotPassword';
 import AdminPanel from './components/AdminPanel';
 import AdminLogin from './components/AdminLogin';
-import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
-import api from './services/api';
 
 // Replace axios interceptor with the one in api.js
 function App() {
@@ -55,7 +53,6 @@ function App() {
           </Routes>
         </AuthProvider>
       </Router>
-      <Route path="*" component={LoginPage} />
     </ErrorBoundary>
   );
 
