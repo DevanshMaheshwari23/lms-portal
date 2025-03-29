@@ -17,6 +17,9 @@ const port = 5001;
 
 // Enable CORS and JSON parsing
 app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://lms-portal-4b77.vercel.app', 'https://*.vercel.app']
+    : 'http://localhost:5173',
   credentials: true
 }));
 app.use(bodyParser.json());
@@ -26,7 +29,10 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } // Use secure: true in production with HTTPS
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  }
 }));
 
 // Serve static files from the "uploads" folder so that images can be accessed via URL
@@ -691,6 +697,28 @@ app.get('/api/courses-with-users', async (req, res) => {
   } catch (err) {
     console.error('Error fetching courses with users:', err);
     res.status(500).json({ error: 'Failed to fetch courses with users' });
+  }
+});
+
+/* =====================
+   ADMIN ROUTES
+   ===================== */
+
+// Serve admin panel
+app.get('/admin', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    res.redirect('/');
+  } else {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+  }
+});
+
+// Catch-all route for client-side routing
+app.get('*', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    res.redirect('/');
+  } else {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
   }
 });
 
