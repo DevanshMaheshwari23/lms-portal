@@ -17,7 +17,6 @@ const port = 5001;
 
 // Enable CORS and JSON parsing
 app.use(cors({
-  origin: "http://localhost:5173",
   credentials: true
 }));
 app.use(bodyParser.json());
