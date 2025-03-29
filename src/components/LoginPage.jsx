@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { AuthContext } from "../context/AuthContext"; // Assume you have this set up
+import { AuthContext } from "../context/AuthContext";
 import "./LoginPage.css";
 import Banner1 from "../assets/Banner1.jpg";
 import Banner2 from "../assets/Banner2.jpg";
@@ -14,7 +14,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const [currentImage, setCurrentImage] = useState(0);
   const images = [Banner1, Banner2, Banner3];
-  const { setUser } = useContext(AuthContext); // Update global user on login
+  const { setUser } = useContext(AuthContext);
 
   // Change the image every 4 seconds
   useEffect(() => {
@@ -26,15 +26,11 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Basic validation for email and password
     if (!email || !password) {
       setError('Email and password are required');
       return;
     }
-    
     try {
-      // Make sure to include credentials so your HTTP-only cookie is set
       const response = await axios.post(
         'http://localhost:5001/api/login',
         { email, password },
@@ -42,58 +38,45 @@ function LoginPage() {
       );
       
       if (response.data.success) {
-        // After login, fetch the profile using the backend
+        // Store email in localStorage for fallback
+        localStorage.setItem('userEmail', email);
+        // Fetch the user profile after successful login
         const profileResponse = await axios.get(
           `http://localhost:5001/api/profile?email=${email}`,
           { withCredentials: true }
         );
         const profile = profileResponse.data;
-        // Update global user state with profile data
         setUser(profile);
         
-        // Check if the profile is complete (e.g. if name exists)
-        if (profile.name) {
-          // Optionally, if a course is selected, redirect with courseId query
-          if (profile.selectedCourse) {
-            const courseId =
-              typeof profile.selectedCourse === 'object'
-                ? profile.selectedCourse._id
-                : profile.selectedCourse;
-            navigate(`/home?courseId=${courseId}`);
-          } else {
-            navigate('/home');
-          }
+        // Navigate based on course selection
+        if (profile && profile.selectedCourse) {
+          navigate('/home');
         } else {
           navigate('/profile');
         }
+      } else {
+        setError(response.data.message || "Login failed");
       }
     } catch (err) {
-      if (err.response && err.response.data) {
-        setError(err.response.data.message || 'Login failed');
-      } else {
-        setError('An error occurred. Please try again.');
-      }
+      console.error(err);
+      setError("An error occurred. Please try again.");
     }
   };
 
   return (
     <div className="login-page">
-      {/* Top Navigation Bar */}
       <nav className="navbar">
         <div className="navbar-left">
           <h1 className="brand-name">KNS Education</h1>
         </div>
         <ul className="nav-links">
-          <li><a href="#home">Home</a></li>
-          <li><a href="#careers">Courses</a></li>
-          <li><a href="#about">About Us</a></li>
+          <li><Link to="/home">Home</Link></li>
+          <li><Link to="/courses">Courses</Link></li>
+          <li><Link to="/about">About Us</Link></li>
         </ul>
-        <button className="enroll-btn">Enroll Now</button>
+        <Link to="/enroll"><button className="enroll-btn">Enroll Now</button></Link>
       </nav>
-
-      {/* Main Content */}
       <div className="content-wrapper">
-        {/* Left Section: Login Card */}
         <div className="left-section">
           <div className="login-card">
             <h2>Login</h2>
@@ -105,35 +88,30 @@ function LoginPage() {
                 type="email"
                 placeholder="username@gmail.com"
                 value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
                 required
               />
-
               <label htmlFor="password">Password</label>
               <input
                 id="password"
                 type="password"
                 placeholder="Password"
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 required
               />
-
               <div className="forgot-password">
-                <a href="/forgot-password">Forgot password?</a>
+                <Link to="/forgot-password">Forgot password?</Link>
               </div>
-
-              <button type="submit" className="sign-in-btn">
-                Sign in
-              </button>
+              <button type="submit" className="sign-in-btn">Sign in</button>
             </form>
             <div className="register">
-              Not a member? <a href="/register">Register for free</a>
+              Not a member? <Link to="/register">Register for free</Link>
             </div>
           </div>
         </div>
-
-        {/* Right Section: Info and Carousel Image */}
         <div className="right-section">
           <div className="hero-image">
             {images.map((image, index) => (

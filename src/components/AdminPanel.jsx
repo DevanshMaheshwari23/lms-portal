@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './AdminPanel.css';
 import { useNavigate } from 'react-router-dom';
+import '../styles/admin.css';
 
 function AdminPanel() {
   // Course form state
@@ -14,7 +15,6 @@ function AdminPanel() {
       chapters: [
         { 
           chapterTitle: '', 
-          chapterContent: '', 
           subChapters: [] 
         }
       ] 
@@ -38,18 +38,19 @@ function AdminPanel() {
   const [users, setUsers] = useState([]);
   // State for banned users list
   const [bannedUsers, setBannedUsers] = useState([]);
-  // State to expand/collapse batches
-  const [expandedBatches, setExpandedBatches] = useState({});
+  // New dropdown state for settings tab
+  const [activeUsersDropdownExpanded, setActiveUsersDropdownExpanded] = useState(false);
+  const [bannedUsersDropdownExpanded, setBannedUsersDropdownExpanded] = useState(false);
+
+  // Add new state for dashboard stats
+  const [dashboardStats, setDashboardStats] = useState({
+    totalUsers: 0,
+    totalCourses: 0,
+    activeUsers: 0,
+    completionRate: 0
+  });
 
   const navigate = useNavigate();
-
-  // Toggle a batch group when its header is clicked
-  const toggleBatch = (batch) => {
-    setExpandedBatches(prev => ({
-      ...prev,
-      [batch]: !prev[batch]
-    }));
-  };
 
   // Authentication check on mount
   useEffect(() => {
@@ -110,7 +111,7 @@ function AdminPanel() {
   const fetchUsers = async () => {
     try {
       const res = await axios.get('http://localhost:5001/api/users');
-      console.log('Users:', res.data);  // Log the users to ensure data is coming correctly
+      console.log('Users:', res.data);
       setUsers(res.data);
     } catch (err) {
       console.error('Error fetching users:', err);
@@ -127,24 +128,6 @@ function AdminPanel() {
     }
   };
 
-  // Group users by course (assumes each user object has a "profile" field with selectedCourse details)
-  const groupUsersByCourse = () => {
-    const courses = {};
-    users.forEach(user => {
-      const courseTitle =
-        user.profile && user.profile.selectedCourse
-          ? (typeof user.profile.selectedCourse === 'object'
-              ? user.profile.selectedCourse.title || 'No Title'
-              : user.profile.selectedCourse || 'No Course')
-          : 'No Course';
-      if (!courses[courseTitle]) {
-        courses[courseTitle] = [];
-      }
-      courses[courseTitle].push(user);
-    });
-    return courses;
-  };
-  
   // Block user function remains unchanged
   const blockUser = async (userId, userEmail) => {
     try {
@@ -171,11 +154,11 @@ function AdminPanel() {
     }
   };
 
-  // --- Course management helper functions remain unchanged ---
+  // --- Course management helper functions remain unchanged except chapterContent removal ---
   const addSection = () => {
     setSections([
       ...sections,
-      { sectionTitle: '', chapters: [{ chapterTitle: '', chapterContent: '', subChapters: [] }] },
+      { sectionTitle: '', chapters: [{ chapterTitle: '', subChapters: [] }] },
     ]);
   };
 
@@ -201,7 +184,6 @@ function AdminPanel() {
     const newSections = [...sections];
     newSections[sectionIndex].chapters.push({ 
       chapterTitle: '', 
-      chapterContent: '', 
       subChapters: [] 
     });
     setSections(newSections);
@@ -215,6 +197,7 @@ function AdminPanel() {
     setSections(newSections);
   };
 
+  // Updated to only handle chapterTitle changes
   const handleChapterChange = (sectionIndex, chapterIndex, field, value) => {
     const newSections = [...sections];
     newSections[sectionIndex].chapters[chapterIndex][field] = value;
@@ -259,6 +242,7 @@ function AdminPanel() {
     setSections(newSections);
   };
 
+  // Toggle the entire sub-chapter block (title and URL together)
   const toggleSubChapter = (sectionIndex, chapterIndex, subIndex) => {
     const key = `${sectionIndex}-${chapterIndex}-${subIndex}`;
     setExpandedSubChapters(prev => ({
@@ -308,7 +292,7 @@ function AdminPanel() {
         subChapters: chap.subChapters || []
       }))
     }));
-    setSections(updatedSections.length ? updatedSections : [{ sectionTitle: '', chapters: [{ chapterTitle: '', chapterContent: '', subChapters: [] }] }]);
+    setSections(updatedSections.length ? updatedSections : [{ sectionTitle: '', chapters: [{ chapterTitle: '', subChapters: [] }] }]);
     setEditMode(true);
     setEditingCourseId(course._id);
   };
@@ -331,7 +315,7 @@ function AdminPanel() {
     setCourseTitle('');
     setCourseDescription('');
     setCourseCategory('');
-    setSections([{ sectionTitle: '', chapters: [{ chapterTitle: '', chapterContent: '', subChapters: [] }] }]);
+    setSections([{ sectionTitle: '', chapters: [{ chapterTitle: '', subChapters: [] }] }]);
     setEditMode(false);
     setEditingCourseId(null);
     setExpandedSections({});
@@ -339,12 +323,43 @@ function AdminPanel() {
     setExpandedSubChapters({});
   };
 
+  // Add new useEffect for fetching dashboard stats
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        const [usersRes, coursesRes] = await Promise.all([
+          axios.get('http://localhost:5001/api/users'),
+          axios.get('http://localhost:5001/api/courses')
+        ]);
+
+        setDashboardStats({
+          totalUsers: usersRes.data.length,
+          totalCourses: coursesRes.data.length,
+          activeUsers: usersRes.data.filter(user => !user.isBanned).length,
+          completionRate: 75 // This should be calculated based on your data
+        });
+      } catch (err) {
+        console.error('Error fetching dashboard stats:', err);
+      }
+    };
+
+    if (activeTab === 'dashboard') {
+      fetchDashboardStats();
+    }
+  }, [activeTab]);
+
   return (
     <div className="admin-panel">
       {/* Sidebar with tab options */}
       <div className="sidebar">
         <h3>Admin Panel</h3>
         <ul>
+          <li 
+            className={activeTab === 'dashboard' ? 'active' : ''} 
+            onClick={() => setActiveTab('dashboard')}
+          >
+            Dashboard
+          </li>
           <li 
             className={activeTab === 'courses' ? 'active' : ''} 
             onClick={() => setActiveTab('courses')}
@@ -385,7 +400,27 @@ function AdminPanel() {
 
       {/* Main content area */}
       <div className="content">
-        {activeTab === 'courses' ? (
+        {activeTab === 'dashboard' && (
+          <div className="dashboard animate-fade-in">
+            <h2>Dashboard Overview</h2>
+            <div className="dashboard-grid">
+              <div className="dashboard-card">
+                <h3>Total Users</h3>
+                <p className="stat-number">{dashboardStats.totalUsers}</p>
+              </div>
+              <div className="dashboard-card">
+                <h3>Active Users</h3>
+                <p className="stat-number">{dashboardStats.activeUsers}</p>
+              </div>
+              <div className="dashboard-card">
+                <h3>Total Courses</h3>
+                <p className="stat-number">{dashboardStats.totalCourses}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'courses' && (
           <>
             <h2>{editMode ? 'Edit Course' : 'Course Setup'}</h2>
             {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -453,16 +488,6 @@ function AdminPanel() {
                             </div>
                             {expandedChapters[sectionIndex] && expandedChapters[sectionIndex][chapterIndex] && (
                               <div className="chapter-details">
-                                <div>
-                                  <label>Chapter Content:</label>
-                                  <input
-                                    type="text"
-                                    value={chapter.chapterContent}
-                                    onChange={(e) =>
-                                      handleChapterChange(sectionIndex, chapterIndex, 'chapterContent', e.target.value)
-                                    }
-                                  />
-                                </div>
                                 <div className="sub-chapters">
                                   <h5>Sub-Chapters</h5>
                                   {(chapter.subChapters || []).map((sub, subIndex) => {
@@ -470,21 +495,23 @@ function AdminPanel() {
                                     return (
                                       <div key={subIndex} className="sub-chapter">
                                         <div className="sub-chapter-header" onClick={() => toggleSubChapter(sectionIndex, chapterIndex, subIndex)}>
-                                          <label>Sub-Chapter Title:</label>
-                                          <input
-                                            type="text"
-                                            value={sub.subTitle}
-                                            onChange={(e) =>
-                                              handleSubChapterChange(sectionIndex, chapterIndex, subIndex, 'subTitle', e.target.value)
-                                            }
-                                            onClick={(e) => e.stopPropagation()}
-                                          />
+                                          <h6 style={{ margin: '0 10px 0 0' }}>Sub-Chapter {subIndex + 1}</h6>
                                           <span className="toggle-icon">
                                             {expandedSubChapters[key] ? '-' : '+'}
                                           </span>
                                         </div>
                                         {expandedSubChapters[key] && (
-                                          <div className="sub-chapter-details">
+                                          <div className="sub-chapter-content">
+                                            <div>
+                                              <label>Title:</label>
+                                              <input
+                                                type="text"
+                                                value={sub.subTitle}
+                                                onChange={(e) =>
+                                                  handleSubChapterChange(sectionIndex, chapterIndex, subIndex, 'subTitle', e.target.value)
+                                                }
+                                              />
+                                            </div>
                                             <div>
                                               <label>Sub-Chapter URL:</label>
                                               <input
@@ -529,58 +556,66 @@ function AdminPanel() {
               )}
             </div>
           </>
-        ) : (
-          // Settings Tab: display active users grouped by course and banned users with unblock functionality
-          <>
-            <h2>Settings - User Management</h2>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="settings-section animate-fade-in">
+            <h2>User Management</h2>
             <div className="active-users">
-              <h3>Active Users</h3>
-              {Object.entries(groupUsersByCourse()).map(([course, usersInCourse]) => (
-                <div key={course} className="user-batch">
-                  <h4 onClick={() => toggleBatch(course)} style={{ cursor: 'pointer' }}>
-                    Course: {course} {expandedBatches[course] ? '-' : '+'}
-                  </h4>
-                  {expandedBatches[course] && (
-                    <ul>
-                      {usersInCourse.map(user => (
-                        <li key={user._id} className="user-item">
-                          <span>
-                            {(user.profile && user.profile.name) || user.name} ({user.email})
-                          </span>
-                          <button
-                            onClick={() => blockUser(user._id, user.email)}
-                            style={{ backgroundColor: "red", color: "white", marginLeft: "10px" }}
-                          >
-                            Block User
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="banned-users">
-              <h3>Banned Users</h3>
-              {bannedUsers.length ? (
+              <h3 
+                style={{ cursor: 'pointer' }} 
+                onClick={() => setActiveUsersDropdownExpanded(prev => !prev)}
+              >
+                Active Users {activeUsersDropdownExpanded ? '-' : '+'}
+              </h3>
+              {activeUsersDropdownExpanded && (
                 <ul>
-                  {bannedUsers.map(banned => (
-                    <li key={banned._id} className="user-item">
-                      <span>{banned.email} (Banned on: {new Date(banned.bannedAt).toLocaleString()})</span>
+                  {users.map(user => (
+                    <li key={user._id} className="user-item">
+                      <span>
+                        {(user.profile && user.profile.name) || user.name} ({user.email})
+                      </span>
                       <button
-                        onClick={() => unblockUser(banned._id, banned.email)}
-                        style={{ backgroundColor: "green", color: "white", marginLeft: "10px" }}
+                        onClick={() => blockUser(user._id, user.email)}
+                        className="block-button"
                       >
-                        Unblock User
+                        Block User
                       </button>
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <p>No banned users.</p>
               )}
             </div>
-          </>
+            <div className="banned-users">
+              <h3 
+                style={{ cursor: 'pointer' }} 
+                onClick={() => setBannedUsersDropdownExpanded(prev => !prev)}
+              >
+                Blocked Users {bannedUsersDropdownExpanded ? '-' : '+'}
+              </h3>
+              {bannedUsersDropdownExpanded && (
+                <>
+                  {bannedUsers.length ? (
+                    <ul>
+                      {bannedUsers.map(banned => (
+                        <li key={banned._id} className="user-item">
+                          <span>{banned.email} (Banned on: {new Date(banned.bannedAt).toLocaleString()})</span>
+                          <button
+                            onClick={() => unblockUser(banned._id, banned.email)}
+                            className="unblock-button"
+                          >
+                            Unblock User
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No banned users.</p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>

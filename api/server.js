@@ -7,37 +7,31 @@ import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 import multer from 'multer';
 import path from 'path';
-import cookieParser from 'cookie-parser'; // Import cookie-parser
+import session from 'express-session';
 
 dotenv.config();
 
-
+// Create an Express app
 const app = express();
-const port = process.env.PORT || 5001;
+const port = 5001;
 
-// In production, set the origin dynamically or allow all origins if served from same domain
-const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
+// Enable CORS and JSON parsing
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 app.use(bodyParser.json());
-app.use(cookieParser());
 
-// Serve static files from the "uploads" folder and client build folder (for production)
+// Session middleware configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false } // Use secure: true in production with HTTPS
+}));
+
+// Serve static files from the "uploads" folder so that images can be accessed via URL
 app.use('/uploads', express.static('uploads'));
-
-// In production, serve the React build (assuming you have built your client)
-if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(process.cwd(), 'build');
-  app.use(express.static(buildPath));
-  
-  // Dynamic routing: any route not matching an API endpoint will serve index.html
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(buildPath, 'index.html'));
-  });
-}
 
 const mongoURI = process.env.mongoURI;
 
@@ -69,7 +63,6 @@ const Profile = mongoose.model('Profile', profileSchema);
 /* =====================
    BANNED EMAIL MODEL
    ===================== */
-// New schema/model to keep track of banned emails
 const bannedEmailSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   bannedAt: { type: Date, default: Date.now }
@@ -114,25 +107,139 @@ function storeOTP(email, otp) {
 // Send OTP email using Nodemailer
 async function sendOTPEmail(receiverEmail, otp) {
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: {
       user: process.env.EMAIL,
       pass: process.env.EMAIL_PASSWORD,
     },
+    tls: {
+      rejectUnauthorized: false
+    }
   });
 
   const mailOptions = {
-    from: process.env.EMAIL,
+    from: {
+      name: "LMS Portal Security",
+      address: process.env.EMAIL
+    },
+    replyTo: process.env.EMAIL,
     to: receiverEmail,
-    subject: 'Your OTP Code',
-    text: `Your OTP code is: ${otp}`,
+    subject: 'Secure Verification Code - LMS Portal',
+    headers: {
+      'List-Unsubscribe': `<mailto:${process.env.EMAIL}>`,
+      'Precedence': 'bulk',
+      'X-Auto-Response-Suppress': 'OOF, AutoReply',
+      'X-Priority': '1',
+      'X-MSMail-Priority': 'High',
+      'Importance': 'high',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block'
+    },
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta name="format-detection" content="telephone=no">
+          <meta name="x-apple-disable-message-reformatting">
+          <title>Secure Verification Code</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .container {
+              background-color: #ffffff;
+              border-radius: 8px;
+              padding: 30px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .otp-box {
+              background-color: #f8f9fa;
+              border: 2px dashed #3b82f6;
+              border-radius: 8px;
+              padding: 20px;
+              text-align: center;
+              margin: 30px 0;
+            }
+            .otp-code {
+              font-size: 32px;
+              font-weight: bold;
+              color: #3b82f6;
+              letter-spacing: 5px;
+              margin: 0;
+            }
+            .footer {
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #eee;
+              font-size: 12px;
+              color: #666;
+            }
+            .security-notice {
+              background-color: #f8f9fa;
+              border-left: 4px solid #3b82f6;
+              padding: 15px;
+              margin: 20px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="color: #1a56db; margin-bottom: 20px;">Secure Verification Code</h1>
+            </div>
+            
+            <p>Dear User,</p>
+            
+            <p>We received a request to verify your identity for the LMS Portal. To complete the process, please use the following secure verification code:</p>
+            
+            <div class="otp-box">
+              <p class="otp-code">${otp}</p>
+            </div>
+            
+            <div class="security-notice">
+              <p><strong>Security Notice:</strong></p>
+              <ul>
+                <li>This verification code will expire in 5 minutes</li>
+                <li>If you didn't request this verification, please ignore this email</li>
+                <li>For security reasons, never share this code with anyone</li>
+                <li>Our support team will never ask for this code</li>
+              </ul>
+            </div>
+            
+            <p>If you need assistance, please contact our support team.</p>
+            
+            <div class="footer">
+              <p>This is a secure message from LMS Portal. Please do not reply to this email.</p>
+              <p>© ${new Date().getFullYear()} LMS Portal. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `Secure Verification Code: ${otp}\n\nThis code will expire in 5 minutes.\n\nIf you didn't request this verification, please ignore this email.\n\nFor security reasons, never share this code with anyone.\n\nBest regards,\nLMS Portal Security Team`
   };
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log('OTP sent:', info.response);
+    console.log('OTP sent successfully:', info.response);
+    return true;
   } catch (error) {
     console.error('Error sending OTP:', error);
+    return false;
   }
 }
 
@@ -230,8 +337,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Login endpoint (with banned email check)
-// After a successful login, set an HTTP-only cookie containing the user's email.
+// Login endpoint (with banned email check and session handling)
 app.post('/api/login', async (req, res) => {
   let { email, password } = req.body;
   email = email.trim().toLowerCase();
@@ -254,38 +360,53 @@ app.post('/api/login', async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (isMatch) {
+      // Save minimal user info into session
+      req.session.user = { email: user.email };
       console.log('Login successful for:', email);
-      // Set an HTTP-only cookie with the user's email.
-      res.cookie('userEmail', email, {
-        httpOnly: true,
-        sameSite: 'lax',
-      });
-      res.json({ success: true });
+      return res.json({ success: true });
     } else {
       console.log('Invalid credentials for:', email);
-      res.status(401).json({ success: false, message: 'Invalid credentials' });
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
   } catch (error) {
     console.error('Error during login:', error);
-    res.status(500).json({ success: false, message: 'Error during login', error: error.message });
+    return res.status(500).json({ success: false, message: 'Error during login', error: error.message });
   }
 });
 
-// New endpoint: GET /api/current-user
-// Reads the 'userEmail' cookie and returns the corresponding profile (populated with selectedCourse)
+// Endpoint to get current user from session
 app.get('/api/current-user', async (req, res) => {
-  const email = req.cookies?.userEmail;
-  if (!email) {
-    return res.status(401).json({ error: 'Not authenticated' });
+  if (req.session && req.session.user) {
+    try {
+      // Get the user's email from the session
+      const { email } = req.session.user;
+      
+      // Check if the email is banned
+      const banned = await BannedEmail.findOne({ email });
+      if (banned) {
+        return res.status(401).json({ message: 'This account has been banned.' });
+      }
+      
+      // Fetch the user's profile
+      let profile = await Profile.findOne({ email }).populate('selectedCourse');
+      if (!profile) {
+        // Create a default profile if none exists
+        profile = new Profile({ 
+          email,
+          name: "Default Name", 
+          profileImage: "default-profile.png" 
+        });
+        await profile.save();
+      }
+      
+      // Return the profile data
+      return res.json(profile);
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+      return res.status(500).json({ message: 'Error fetching user profile' });
+    }
   }
-  try {
-    const profile = await Profile.findOne({ email }).populate('selectedCourse');
-    if (!profile) return res.status(404).json({ error: 'User not found' });
-    res.json(profile);
-  } catch (err) {
-    console.error('Error fetching current user:', err);
-    res.status(500).json({ error: 'Error fetching current user' });
-  }
+  return res.status(401).json({ message: 'Not authenticated' });
 });
 
 /* =====================
@@ -345,7 +466,7 @@ app.post('/api/profile', upload.single('profileImage'), async (req, res) => {
 
 // PUT /api/profile - Update the existing profile (including course selection)
 app.put('/api/profile', upload.single('profileImage'), async (req, res) => {
-  console.log('PUT /api/profile');
+  console.log('PUT /api/profile hit');
   try {
     const { name, course, email } = req.body;
     let profileImage = req.body.profileImage || '';
@@ -472,7 +593,7 @@ app.delete('/api/courses/:id', async (req, res) => {
   }
 });
 
-// GET all users (already exists)
+// GET all users
 app.get('/api/users', async (req, res) => {
   try {
     const users = await User.find();
@@ -509,6 +630,7 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
+// GET banned users
 app.get('/api/banned-users', async (req, res) => {
   try {
     const bannedUsers = await BannedEmail.find();
@@ -519,6 +641,7 @@ app.get('/api/banned-users', async (req, res) => {
   }
 });
 
+// Unblock user endpoint
 app.put('/api/banned-users/:id/unblock', async (req, res) => {
   const bannedId = req.params.id;
   try {
@@ -530,6 +653,45 @@ app.put('/api/banned-users/:id/unblock', async (req, res) => {
   } catch (err) {
     console.error('Error unblocking user:', err);
     res.status(500).json({ error: 'Failed to unblock user' });
+  }
+});
+
+// GET all courses with enrolled users
+app.get('/api/courses-with-users', async (req, res) => {
+  try {
+    const courses = await Course.find();
+    const profiles = await Profile.find().populate('selectedCourse');
+    
+    // Group profiles by their selected course
+    const courseGroups = {};
+    courses.forEach(course => {
+      courseGroups[course._id] = {
+        course: course,
+        enrolledUsers: []
+      };
+    });
+
+    // Add users to their respective course groups
+    profiles.forEach(profile => {
+      if (profile.selectedCourse) {
+        const courseId = typeof profile.selectedCourse === 'object' 
+          ? profile.selectedCourse._id 
+          : profile.selectedCourse;
+        
+        if (courseGroups[courseId]) {
+          courseGroups[courseId].enrolledUsers.push({
+            name: profile.name,
+            email: profile.email,
+            profileImage: profile.profileImage
+          });
+        }
+      }
+    });
+
+    res.json(Object.values(courseGroups));
+  } catch (err) {
+    console.error('Error fetching courses with users:', err);
+    res.status(500).json({ error: 'Failed to fetch courses with users' });
   }
 });
 
