@@ -6,6 +6,7 @@ import "./LoginPage.css";
 import Banner1 from "../assets/Banner1.jpg";
 import Banner2 from "../assets/Banner2.jpg";
 import Banner3 from "../assets/Banner3.jpg";
+import apiService from "../services/apiService";
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -31,20 +32,13 @@ function LoginPage() {
       return;
     }
     try {
-      const response = await axios.post(
-        'http://localhost:5001/api/login',
-        { email, password },
-        { withCredentials: true }
-      );
+      const response = await apiService.login({ email, password });
       
       if (response.data.success) {
         // Store email in localStorage for fallback
         localStorage.setItem('userEmail', email);
         // Fetch the user profile after successful login
-        const profileResponse = await axios.get(
-          `http://localhost:5001/api/profile?email=${email}`,
-          { withCredentials: true }
-        );
+        const profileResponse = await apiService.getProfile(email);
         const profile = profileResponse.data;
         setUser(profile);
         

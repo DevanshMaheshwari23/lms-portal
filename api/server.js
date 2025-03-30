@@ -18,7 +18,7 @@ const port = 5001;
 // Enable CORS and JSON parsing
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? 'https://lms-portal-blush.vercel.app'
+    ? ['https://lms-portal-4zyl5i66t-devanshs-projects-b9c496ea.vercel.app', 'https://lms-portal-blush.vercel.app']
     : 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

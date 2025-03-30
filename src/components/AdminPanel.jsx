@@ -3,6 +3,7 @@ import axios from 'axios';
 import './AdminPanel.css';
 import { useNavigate } from 'react-router-dom';
 import '../styles/admin.css';
+import apiService from '../services/apiService';
 
 function AdminPanel() {
   // Course form state
@@ -93,7 +94,7 @@ function AdminPanel() {
 
   const fetchCoursesList = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/courses');
+      const res = await apiService.getCourses();
       setCoursesList(res.data);
     } catch (err) {
       console.error('Error fetching courses list:', err);
@@ -110,7 +111,7 @@ function AdminPanel() {
   
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/users');
+      const res = await apiService.getUsers();
       console.log('Users:', res.data);
       setUsers(res.data);
     } catch (err) {
@@ -120,7 +121,7 @@ function AdminPanel() {
 
   const fetchBannedUsers = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/banned-users');
+      const res = await apiService.getBannedUsers();
       console.log('Banned Users:', res.data);
       setBannedUsers(res.data);
     } catch (err) {
@@ -131,7 +132,7 @@ function AdminPanel() {
   // Block user function remains unchanged
   const blockUser = async (userId, userEmail) => {
     try {
-      await axios.delete(`http://localhost:5001/api/users/${userId}`);
+      await apiService.blockUser(userId);
       alert(`User with email ${userEmail} has been blocked, banned, and deleted.`);
       localStorage.setItem('forceLogout', Date.now());
       fetchUsers();
@@ -145,7 +146,7 @@ function AdminPanel() {
   // Unblock user function
   const unblockUser = async (bannedUserId, bannedEmail) => {
     try {
-      await axios.put(`http://localhost:5001/api/banned-users/${bannedUserId}/unblock`);
+      await apiService.unblockUser(bannedUserId);
       alert(`User with email ${bannedEmail} has been unblocked.`);
       fetchBannedUsers();
     } catch (err) {
@@ -265,10 +266,10 @@ function AdminPanel() {
 
     try {
       if (editMode && editingCourseId) {
-        await axios.put(`http://localhost:5001/api/courses/${editingCourseId}`, courseData);
+        await apiService.updateCourse(editingCourseId, courseData);
         alert('Course updated successfully!');
       } else {
-        const res = await axios.post('http://localhost:5001/api/courses', courseData);
+        const res = await apiService.createCourse(courseData);
         if (res.status === 201) {
           alert('Course saved successfully!');
         }
@@ -301,7 +302,7 @@ function AdminPanel() {
     try {
       const confirmDelete = window.confirm('Are you sure you want to delete this course?');
       if (confirmDelete) {
-        await axios.delete(`http://localhost:5001/api/courses/${courseId}`);
+        await apiService.deleteCourse(courseId);
         alert('Course deleted successfully!');
         fetchCoursesList();
       }
@@ -328,8 +329,8 @@ function AdminPanel() {
     const fetchDashboardStats = async () => {
       try {
         const [usersRes, coursesRes] = await Promise.all([
-          axios.get('http://localhost:5001/api/users'),
-          axios.get('http://localhost:5001/api/courses')
+          apiService.getUsers(),
+          apiService.getCourses()
         ]);
 
         setDashboardStats({
