@@ -3,7 +3,7 @@ import axios from 'axios';
 import './AdminPanel.css';
 import { useNavigate } from 'react-router-dom';
 import '../styles/admin.css';
-import apiService from '../services/apiService';
+import apiService from '../services/api';
 
 function AdminPanel() {
   // Course form state

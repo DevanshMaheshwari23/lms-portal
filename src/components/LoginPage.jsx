@@ -6,7 +6,7 @@ import "./LoginPage.css";
 import Banner1 from "../assets/Banner1.jpg";
 import Banner2 from "../assets/Banner2.jpg";
 import Banner3 from "../assets/Banner3.jpg";
-import apiService from "../services/apiService";
+import apiService from "../services/api";
 
 function LoginPage() {
   const [email, setEmail] = useState('');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../services/api';
 import './ForgotPassword.css';
 import Banner1 from "../assets/Banner1.jpg";
 import Banner2 from "../assets/Banner2.jpg";
@@ -32,7 +32,7 @@ const ForgotPassword = () => {
     setMessage('');
 
     try {
-      const response = await axios.post('http://localhost:5001/api/request-otp', { email });
+      const response = await api.post('/request-otp', { email });
       setLoading(false);
       
       if (response.data.success) {
@@ -60,7 +60,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5001/api/verify-otp', {
+      const response = await api.post('/verify-otp', {
         email,
         otp,
         newPassword,

@@ -6,6 +6,7 @@ import { Helmet } from 'react-helmet';
 import { AuthContext } from '../context/AuthContext';
 import './Home.css';
 import logo from './logo.png';
+import { api } from '../services/api';
 
 const Home = () => {
   const [user, setUser] = useState({ name: '', profileImage: '', selectedCourse: null });
@@ -48,9 +49,7 @@ const Home = () => {
         navigate('/login');
         return;
       }
-      const res = await axios.get(`http://localhost:5001/api/profile?email=${email}`, {
-        withCredentials: true,
-      });
+      const res = await api.get(`/profile?email=${email}`);
       const profileData = res.data;
       setUser(profileData);
       // Update updatedName only if the profile modal is not open,
@@ -68,7 +67,7 @@ const Home = () => {
           : profileData.selectedCourse;
       }
       if (courseId) {
-        const courseRes = await axios.get(`http://localhost:5001/api/course/${courseId}`);
+        const courseRes = await api.get(`/course/${courseId}`);
         setCourse(courseRes.data);
       } else {
         setCourse(null);
@@ -105,10 +104,7 @@ const Home = () => {
     }
     if (imageFile) formData.append('profileImage', imageFile);
     try {
-      const res = await axios.put('http://localhost:5001/api/profile', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        withCredentials: true,
-      });
+      const res = await api.put('/profile', formData);
       // Update local state with the new name and profile image while preserving the course
       setUser((prevUser) => ({
         ...prevUser,
@@ -123,7 +119,7 @@ const Home = () => {
         const courseId = typeof res.data.selectedCourse === 'object' 
           ? res.data.selectedCourse._id 
           : res.data.selectedCourse;
-        const courseRes = await axios.get(`http://localhost:5001/api/course/${courseId}`);
+        const courseRes = await api.get(`/course/${courseId}`);
         setCourse(courseRes.data);
       }
     } catch (err) {

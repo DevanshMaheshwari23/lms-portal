@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Banner1 from "../assets/Banner1.jpg";
 import Banner2 from "../assets/Banner2.jpg";
 import Banner3 from "../assets/Banner3.jpg";
+import { api } from '../services/api';
 
 function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -39,10 +40,9 @@ function RegisterPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:5001/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+      const response = await api.post('/register', {
+        email,
+        password
       });
 
       if (response.ok) {

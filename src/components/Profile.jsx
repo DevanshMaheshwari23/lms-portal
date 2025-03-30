@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './Profile.css';
+import api from '../services/api';
 
 function Profile() {
   const [name, setName] = useState('');
@@ -17,9 +18,7 @@ function Profile() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await fetch('http://localhost:5001/api/courses', {
-          credentials: 'include'
-        });
+        const res = await api.get('/courses');
         if (!res.ok) throw new Error('Failed to fetch courses');
         const data = await res.json();
         setCourses(data);
@@ -34,9 +33,7 @@ function Profile() {
           setError('User email not found.');
           return;
         }
-        const res = await fetch(`http://localhost:5001/api/profile?email=${user.email}`, {
-          credentials: 'include'
-        });
+        const res = await api.get(`/profile?email=${user.email}`);
         if (res.ok) {
           const profileData = await res.json();
           setExistingProfile(profileData);
@@ -103,17 +100,9 @@ function Profile() {
     try {
       let response;
       if (existingProfile) {
-        response = await fetch('http://localhost:5001/api/profile', {
-          method: 'PUT',
-          body: formData,
-          credentials: 'include'
-        });
+        response = await api.put('/profile', formData);
       } else {
-        response = await fetch('http://localhost:5001/api/profile', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include'
-        });
+        response = await api.post('/profile', formData);
       }
 
       if (response.ok) {

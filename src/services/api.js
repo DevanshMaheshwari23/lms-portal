@@ -56,6 +56,7 @@ api.interceptors.response.use(
 );
 
 // API methods
+export { api };  // Export the api instance
 export const apiService = {
   // Auth
   login: (credentials) => api.post('/login', credentials),
