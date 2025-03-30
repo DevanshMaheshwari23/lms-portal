@@ -13,7 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 function AppRouter() {
   return (
     <ErrorBoundary>
-      <Router basename={import.meta.env.BASE_URL}>
+      <Router>
         <AuthProvider>
           <Routes>
             {/* Public Routes */}
