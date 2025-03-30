@@ -9,9 +9,13 @@ const api = axios.create({
   }
 });
 
-// Request interceptor
+// Add request interceptor to handle errors
 api.interceptors.request.use(
   (config) => {
+    // Log the request URL in development
+    if (import.meta.env.DEV) {
+      console.log('Making request to:', config.url);
+    }
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -23,10 +27,11 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor
+// Add response interceptor to handle errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.error('API Error:', error);
     if (error.response) {
       switch (error.response.status) {
         case 401:
