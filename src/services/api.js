@@ -51,6 +51,13 @@ api.interceptors.response.use(
     // Handle network errors
     if (error.code === 'ERR_NETWORK' || error.code === 'ERR_FAILED') {
       console.error('Network error:', error);
+      // Clear any existing session data
+      localStorage.removeItem('userEmail');
+      document.cookie.split(';').forEach(cookie => {
+        document.cookie = cookie
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
       return Promise.reject({
         success: false,
         message: 'Network error. Please check your connection and try again.',
