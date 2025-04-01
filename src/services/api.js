@@ -52,13 +52,19 @@ api.interceptors.request.use(
         const sessionRefreshed = await sessionManager.refreshSession();
         if (!sessionRefreshed) {
           sessionManager.clearSession();
-          sessionManager.redirectToLogin();
+          // Only redirect if not already on login page
+          if (!window.location.pathname.includes('/login')) {
+            sessionManager.redirectToLogin();
+          }
           return Promise.reject(new Error('Session expired. Please log in again.'));
         }
       } catch (error) {
         console.error('Session refresh error:', error);
         sessionManager.clearSession();
-        sessionManager.redirectToLogin();
+        // Only redirect if not already on login page
+        if (!window.location.pathname.includes('/login')) {
+          sessionManager.redirectToLogin();
+        }
         return Promise.reject(new Error('Session expired. Please log in again.'));
       }
     }
@@ -76,10 +82,10 @@ const sessionManager = {
   clearSession: () => {
     localStorage.removeItem('userEmail');
     localStorage.removeItem('selectedCourse');
+    // Clear all cookies
     document.cookie.split(';').forEach(cookie => {
-      document.cookie = cookie
-        .replace(/^ +/, '')
-        .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      const [name] = cookie.split('=');
+      document.cookie = `${name.trim()}=;expires=${new Date().toUTCString()};path=/;domain=.onrender.com`;
     });
   },
 

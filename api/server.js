@@ -48,14 +48,17 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: true, // Always use secure cookies
+    sameSite: 'none', // Allow cross-site cookie sending
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/',
-    domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+    domain: '.onrender.com' // Set domain for production
   }
 }));
+
+// Add trust proxy for secure cookies
+app.set('trust proxy', 1);
 
 // Serve static files from the "uploads" folder so that images can be accessed via URL
 app.use('/uploads', express.static('uploads'));
@@ -455,15 +458,33 @@ app.post('/api/login', async (req, res) => {
         profileImage: profile.profileImage
       };
 
-      console.log('Login successful for:', email);
-      return res.json({ 
-        success: true,
-        data: {
-          email: user.email,
-          name: profile.name,
-          selectedCourse: profile.selectedCourse,
-          profileImage: profile.profileImage
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error('Error saving session:', err);
+          return res.status(500).json({ success: false, message: 'Error creating session' });
         }
+
+        // Set session cookie explicitly
+        res.cookie('connect.sid', req.session.id, {
+          secure: true,
+          sameSite: 'none',
+          httpOnly: true,
+          maxAge: 24 * 60 * 60 * 1000, // 24 hours
+          path: '/',
+          domain: '.onrender.com'
+        });
+
+        console.log('Login successful for:', email);
+        return res.json({ 
+          success: true,
+          data: {
+            email: user.email,
+            name: profile.name,
+            selectedCourse: profile.selectedCourse,
+            profileImage: profile.profileImage
+          }
+        });
       });
     } else {
       console.log('Invalid credentials for:', email);
@@ -477,6 +498,8 @@ app.post('/api/login', async (req, res) => {
 
 // Endpoint to get current user from session
 app.get('/api/current-user', async (req, res) => {
+  console.log('Current user request - Session:', req.session);
+  
   if (req.session && req.session.user) {
     try {
       // Get the user's email from the session
@@ -489,13 +512,23 @@ app.get('/api/current-user', async (req, res) => {
       }
       
       // Return the session user data
-      return res.json(req.session.user);
+      return res.json({ 
+        success: true,
+        data: req.session.user
+      });
     } catch (err) {
       console.error('Error fetching user data:', err);
       return res.status(500).json({ success: false, message: 'Error fetching user data' });
     }
   }
-  return res.status(401).json({ success: false, message: 'Not authenticated' });
+  
+  // If no session or user, clear any existing session
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Error destroying session:', err);
+    }
+    return res.status(401).json({ success: false, message: 'Not authenticated' });
+  });
 });
 
 /* =====================
