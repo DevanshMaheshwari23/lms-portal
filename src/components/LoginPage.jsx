@@ -26,6 +26,28 @@ function LoginPage() {
     return () => clearInterval(interval);
   }, [images.length]);
 
+  // Check for existing session on component mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const response = await apiService.getCurrentUser();
+        if (response.success) {
+          setUser(response.data);
+          if (response.data.selectedCourse) {
+            navigate('/home');
+          } else {
+            navigate('/profile');
+          }
+        }
+      } catch (err) {
+        // Ignore error if no session exists
+        console.log('No active session');
+      }
+    };
+
+    checkSession();
+  }, [navigate, setUser]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -38,31 +60,9 @@ function LoginPage() {
     }
 
     try {
-      // First, try to get current user to check if already logged in
-      const currentUserResponse = await apiService.getCurrentUser();
-      if (currentUserResponse.success) {
-        // User is already logged in, redirect to appropriate page
-        const profile = currentUserResponse.data;
-        setUser(profile);
-        if (profile && profile.selectedCourse) {
-          navigate('/home');
-        } else {
-          navigate('/profile');
-        }
-        return;
-      }
-    } catch (err) {
-      // Ignore error if user is not logged in
-      console.log('No active session');
-    }
-
-    try {
       const response = await apiService.login({ email, password });
       
       if (response.success) {
-        // Store email in localStorage for fallback
-        localStorage.setItem('userEmail', email);
-        
         // Fetch the user profile after successful login
         const profileResponse = await apiService.getProfile(email);
         if (profileResponse.success) {
