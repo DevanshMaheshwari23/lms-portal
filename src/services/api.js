@@ -240,15 +240,15 @@ const apiService = {
         throw new Error('Email and password are required');
       }
 
+      // Clear any existing session data
+      sessionManager.clearSession();
+
       const response = await api.post('/login', credentials, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        withCredentials: true,
-        validateStatus: function (status) {
-          return status >= 200 && status < 500; // Don't reject if status is less than 500
-        }
+        withCredentials: true
       });
       
       // Handle both JSON and text responses
@@ -264,9 +264,16 @@ const apiService = {
       }
       
       if (responseData.success) {
-        // Store email in localStorage for fallback
-        localStorage.setItem('userEmail', credentials.email);
-        return handleApiResponse({ data: responseData });
+        // Store user data in session
+        sessionManager.saveSession(responseData.data);
+        
+        // Verify session by getting current user
+        const currentUserResponse = await api.get('/current-user');
+        if (currentUserResponse.data.success) {
+          return handleApiResponse({ data: responseData });
+        } else {
+          throw new Error('Session verification failed');
+        }
       } else {
         return handleApiError({ response: { data: responseData } });
       }
@@ -288,6 +295,77 @@ const apiService = {
           response: {
             data: {
               message: 'Session expired. Please log in again.'
+            }
+          }
+        });
+      }
+      return handleApiError(error);
+    }
+  },
+
+  // Admin login
+  adminLogin: async (credentials) => {
+    try {
+      // Ensure credentials are properly formatted
+      if (!credentials.email || !credentials.password) {
+        throw new Error('Email and password are required');
+      }
+
+      // Clear any existing session data
+      sessionManager.clearSession();
+
+      const response = await api.post('/admin/login', credentials, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        withCredentials: true
+      });
+      
+      // Handle both JSON and text responses
+      let responseData;
+      if (typeof response.data === 'string') {
+        try {
+          responseData = JSON.parse(response.data);
+        } catch (e) {
+          responseData = { success: false, message: response.data };
+        }
+      } else {
+        responseData = response.data;
+      }
+      
+      if (responseData.success) {
+        // Store admin data in session
+        sessionManager.saveSession(responseData.data);
+        
+        // Verify admin session
+        const currentUserResponse = await api.get('/current-user');
+        if (currentUserResponse.data.success && currentUserResponse.data.data.isAdmin) {
+          return handleApiResponse({ data: responseData });
+        } else {
+          throw new Error('Admin session verification failed');
+        }
+      } else {
+        return handleApiError({ response: { data: responseData } });
+      }
+    } catch (error) {
+      console.error('Admin login error:', error);
+      // Handle network errors specifically
+      if (error.code === 'ERR_NETWORK' || error.code === 'ERR_FAILED') {
+        return handleApiError({
+          response: {
+            data: {
+              message: 'Unable to connect to the server. Please check your internet connection and try again.'
+            }
+          }
+        });
+      }
+      // Handle session expiration
+      if (error.response?.status === 401) {
+        return handleApiError({
+          response: {
+            data: {
+              message: 'Invalid admin credentials.'
             }
           }
         });

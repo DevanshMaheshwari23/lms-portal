@@ -60,8 +60,7 @@ app.use(session({
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/',
-    domain: '.onrender.com', // Set domain for production
-    partitioned: true // Enable partitioned cookies for better security
+    domain: '.onrender.com' // Set domain for production
   },
   name: 'lms_session', // Use a custom session name
   proxy: true, // Trust the proxy
@@ -484,8 +483,7 @@ app.post('/api/login', async (req, res) => {
           httpOnly: true,
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
           path: '/',
-          domain: '.onrender.com',
-          partitioned: true
+          domain: '.onrender.com'
         });
 
         // Set additional headers for security
@@ -840,21 +838,80 @@ app.get('/api/courses-with-users', async (req, res) => {
    ADMIN ROUTES
    ===================== */
 
-// Serve admin panel
-app.get('/admin', (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
-    res.redirect('/');
+// Admin login endpoint
+app.post('/api/admin/login', async (req, res) => {
+  const { email, password } = req.body;
+  
+  // Check if the credentials match the admin credentials
+  if (email === process.env.VITE_ADMIN_EMAIL && password === process.env.VITE_ADMIN_PASSWORD) {
+    // Set admin session
+    req.session.user = {
+      email,
+      isAdmin: true
+    };
+
+    // Save session explicitly
+    req.session.save((err) => {
+      if (err) {
+        console.error('Error saving admin session:', err);
+        return res.status(500).json({ success: false, message: 'Error creating session' });
+      }
+
+      // Set session cookie explicitly
+      res.cookie('lms_session', req.session.id, {
+        secure: true,
+        sameSite: 'none',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        path: '/',
+        domain: '.onrender.com'
+      });
+
+      // Set additional headers for security
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('X-XSS-Protection', '1; mode=block');
+      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+      console.log('Admin login successful');
+      return res.json({ 
+        success: true,
+        data: {
+          email,
+          isAdmin: true
+        }
+      });
+    });
   } else {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+    console.log('Invalid admin credentials');
+    return res.status(401).json({ success: false, message: 'Invalid credentials' });
   }
 });
 
-// Update the catch-all route to handle client-side routing properly
+// Admin check middleware
+const isAdmin = (req, res, next) => {
+  if (req.session && req.session.user && req.session.user.isAdmin) {
+    next();
+  } else {
+    res.status(403).json({ success: false, message: 'Access denied. Admin privileges required.' });
+  }
+};
+
+// Update the admin route to use the isAdmin middleware
+app.get('/admin', isAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
+// Update the catch-all route to handle admin routes properly
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) {
     res.status(404).json({ error: 'API endpoint not found' });
   } else if (req.path === '/admin') {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+    if (req.session && req.session.user && req.session.user.isAdmin) {
+      res.sendFile(path.join(__dirname, '../dist/index.html'));
+    } else {
+      res.redirect('/adminlogin');
+    }
   } else {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
   }

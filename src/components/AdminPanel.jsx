@@ -55,15 +55,15 @@ function AdminPanel() {
 
   // Authentication check on mount
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    if (!isLoggedIn) {
+    const isAdmin = localStorage.getItem('isAdmin');
+    if (!isAdmin) {
       navigate('/adminlogin');
     }
   }, [navigate]);
 
   // Logout function
   const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("isAdmin");
     navigate("/adminlogin");
   };
 
@@ -78,7 +78,7 @@ function AdminPanel() {
   // Force logout on browser back navigation
   useEffect(() => {
     const handlePopState = () => {
-      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("isAdmin");
       navigate("/adminlogin");
     };
     window.addEventListener("popstate", handlePopState);

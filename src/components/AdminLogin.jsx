@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import apiService from '../services/api';
 import './AdminLogin.css';
 
 function AdminLogin() {
@@ -10,22 +10,27 @@ function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Get admin credentials from environment variables
-  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
-  const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
-
   // Handle form submission
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    if (email === adminEmail && password === adminPassword) {
-      // Store login status in localStorage
-      localStorage.setItem('isLoggedIn', 'true');
-      navigate('/admin');
-    } else {
-      setError('Invalid email or password');
+    try {
+      const response = await apiService.adminLogin({ email, password });
+      
+      if (response.success) {
+        // Store admin status in localStorage
+        localStorage.setItem('isAdmin', 'true');
+        navigate('/admin');
+      } else {
+        setError(response.message || 'Invalid credentials');
+      }
+    } catch (err) {
+      console.error('Admin login error:', err);
+      setError(err.message || 'An error occurred during login');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -85,7 +90,14 @@ function AdminLogin() {
           </button>
         </form>
 
-       
+        <div className="back-to-home">
+          <a href="/">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+            </svg>
+            Back to Home
+          </a>
+        </div>
       </div>
     </div>
   );
