@@ -160,14 +160,40 @@ const apiService = {
   // Auth
   login: async (credentials) => {
     try {
-      const response = await api.post('/login', credentials);
+      // Ensure credentials are properly formatted
+      if (!credentials.email || !credentials.password) {
+        throw new Error('Email and password are required');
+      }
+
+      const response = await api.post('/login', credentials, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        validateStatus: function (status) {
+          return status >= 200 && status < 500; // Don't reject if status is less than 500
+        }
+      });
       
-      if (response.data.success) {
-        // Store email in localStorage for fallback
-        localStorage.setItem('userEmail', credentials.email);
+      // Handle both JSON and text responses
+      let responseData;
+      if (typeof response.data === 'string') {
+        try {
+          responseData = JSON.parse(response.data);
+        } catch (e) {
+          responseData = { success: false, message: response.data };
+        }
+      } else {
+        responseData = response.data;
       }
       
-      return handleApiResponse(response);
+      if (responseData.success) {
+        // Store email in localStorage for fallback
+        localStorage.setItem('userEmail', credentials.email);
+        return handleApiResponse({ data: responseData });
+      } else {
+        return handleApiError({ response: { data: responseData } });
+      }
     } catch (error) {
       console.error('Login error:', error);
       return handleApiError(error);
@@ -329,12 +355,34 @@ const apiService = {
   // Profiles
   getProfile: async (email) => {
     try {
+      // Ensure email is provided
+      if (!email) {
+        throw new Error('Email is required');
+      }
+
       // Use the correct URL format with query parameters
-      const response = await api.get('/api/profile', {
-        params: { email }
+      const response = await api.get('/profile', {
+        params: { email },
+        headers: {
+          'Accept': 'application/json'
+        }
       });
-      return handleApiResponse(response);
+
+      // Handle both JSON and text responses
+      let responseData;
+      if (typeof response.data === 'string') {
+        try {
+          responseData = JSON.parse(response.data);
+        } catch (e) {
+          responseData = { success: false, message: response.data };
+        }
+      } else {
+        responseData = response.data;
+      }
+
+      return handleApiResponse({ data: responseData });
     } catch (error) {
+      console.error('Profile fetch error:', error);
       return handleApiError(error);
     }
   },
@@ -352,13 +400,32 @@ const apiService = {
   },
   uploadProfileImage: async (formData) => {
     try {
+      // Ensure formData is provided
+      if (!formData) {
+        throw new Error('Form data is required');
+      }
+
       const response = await api.post('/profile', formData, {
         headers: {
-          // Let the browser set the Content-Type with boundary
+          'Accept': 'application/json'
         }
       });
-      return handleApiResponse(response);
+
+      // Handle both JSON and text responses
+      let responseData;
+      if (typeof response.data === 'string') {
+        try {
+          responseData = JSON.parse(response.data);
+        } catch (e) {
+          responseData = { success: false, message: response.data };
+        }
+      } else {
+        responseData = response.data;
+      }
+
+      return handleApiResponse({ data: responseData });
     } catch (error) {
+      console.error('Profile image upload error:', error);
       return handleApiError(error);
     }
   },

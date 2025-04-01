@@ -29,15 +29,7 @@ function LoginPage() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Clear any existing session data first
-        localStorage.removeItem('userEmail');
-        document.cookie.split(';').forEach(cookie => {
-          document.cookie = cookie
-            .replace(/^ +/, '')
-            .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-        });
-
-        // Try to get current user
+        // Try to get current user without clearing cookies
         const response = await apiService.getCurrentUser();
         if (response.success) {
           setUser(response.data);
@@ -71,14 +63,6 @@ function LoginPage() {
     }
 
     try {
-      // Clear any existing session data first
-      localStorage.removeItem('userEmail');
-      document.cookie.split(';').forEach(cookie => {
-        document.cookie = cookie
-          .replace(/^ +/, '')
-          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-      });
-
       // First try to login
       const loginResponse = await apiService.login({ email, password });
       
