@@ -38,6 +38,10 @@ api.interceptors.request.use(
       config.url = `/api${config.url}`;
     }
     
+    // Add CORS headers for Render
+    config.headers['Access-Control-Allow-Origin'] = '*';
+    config.headers['Access-Control-Allow-Credentials'] = 'true';
+    
     return config;
   },
   (error) => {
