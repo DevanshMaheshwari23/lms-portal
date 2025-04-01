@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import ReactPlayer from 'react-player';
 import { Helmet } from 'react-helmet';
 import { AuthContext } from '../context/AuthContext';
 import './Home.css';
 import logo from './logo.png';
-import { api } from '../services/api';
+import apiService from '../services/api';
 
 const Home = () => {
   const [user, setUser] = useState({ name: '', profileImage: '', selectedCourse: null });
@@ -35,8 +34,6 @@ const Home = () => {
 
   // Modified handleLogout: do not clear localStorage.
   const handleLogout = useCallback(() => {
-    // Removed clearing localStorage
-    // localStorage.removeItem('userEmail');
     window.location.replace('/login');
   }, []);
 
@@ -49,14 +46,21 @@ const Home = () => {
         navigate('/login');
         return;
       }
-      const res = await api.get(`/profile?email=${email}`);
-      const profileData = res.data;
+
+      const profileResponse = await apiService.getProfile(email);
+      if (!profileResponse.success) {
+        console.error('Error fetching profile:', profileResponse.message);
+        return;
+      }
+
+      const profileData = profileResponse.data;
       setUser(profileData);
-      // Update updatedName only if the profile modal is not open,
-      // so that it doesn't override the value you're editing.
+      
+      // Update updatedName only if the profile modal is not open
       if (!showProfile) {
         setUpdatedName(profileData.name);
       }
+
       let courseId;
       const queryParams = new URLSearchParams(window.location.search);
       if (queryParams.has('courseId')) {
@@ -66,9 +70,14 @@ const Home = () => {
           ? profileData.selectedCourse._id
           : profileData.selectedCourse;
       }
+
       if (courseId) {
-        const courseRes = await api.get(`/course/${courseId}`);
-        setCourse(courseRes.data);
+        const courseResponse = await apiService.getCourse(courseId);
+        if (courseResponse.success) {
+          setCourse(courseResponse.data);
+        } else {
+          console.error('Error fetching course:', courseResponse.message);
+        }
       } else {
         setCourse(null);
       }
@@ -103,27 +112,36 @@ const Home = () => {
       formData.append('course', courseId);
     }
     if (imageFile) formData.append('profileImage', imageFile);
+
     try {
-      const res = await api.put('/profile', formData);
+      const response = await apiService.updateProfile(formData);
+      if (!response.success) {
+        throw new Error(response.message);
+      }
+
       // Update local state with the new name and profile image while preserving the course
       setUser((prevUser) => ({
         ...prevUser,
         name: updatedName,
-        profileImage: res.data.profileImage,
-        selectedCourse: res.data.selectedCourse // Preserve the course from the response
+        profileImage: response.data.profileImage,
+        selectedCourse: response.data.selectedCourse // Preserve the course from the response
       }));
+      
       alert('Profile updated successfully!');
       setShowProfile(false);
+      
       // Refresh the course data
-      if (res.data.selectedCourse) {
-        const courseId = typeof res.data.selectedCourse === 'object' 
-          ? res.data.selectedCourse._id 
-          : res.data.selectedCourse;
-        const courseRes = await api.get(`/course/${courseId}`);
-        setCourse(courseRes.data);
+      if (response.data.selectedCourse) {
+        const courseId = typeof response.data.selectedCourse === 'object' 
+          ? response.data.selectedCourse._id 
+          : response.data.selectedCourse;
+        const courseResponse = await apiService.getCourse(courseId);
+        if (courseResponse.success) {
+          setCourse(courseResponse.data);
+        }
       }
     } catch (err) {
-      console.error('Error updating profile:', err.response?.data || err.message);
+      console.error('Error updating profile:', err);
       alert('There was an error updating your profile. Please try again.');
     }
   }, [updatedName, imageFile, user.email, user.selectedCourse]);
