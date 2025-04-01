@@ -294,7 +294,7 @@ const apiService = {
   },
   register: async (userData) => {
     try {
-      const response = await api.post('/register', userData);
+      const response = await api.post('/api/register', userData);
       return handleApiResponse(response);
     } catch (error) {
       return handleApiError(error);
