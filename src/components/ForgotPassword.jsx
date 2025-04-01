@@ -31,6 +31,12 @@ const ForgotPassword = () => {
     setLoading(true);
     setMessage('');
 
+    if (!email) {
+      setMessage('Please enter your email address');
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await apiService.requestOtp(email);
       setLoading(false);
@@ -38,12 +44,12 @@ const ForgotPassword = () => {
       if (response.success) {
         setMessage('OTP sent to your email (Check spam folder)');
       } else {
-        setMessage(response.message || 'Failed to send OTP');
+        setMessage(response.message || 'Failed to send OTP. Please try again.');
       }
     } catch (error) {
       setLoading(false);
       console.error('Error requesting OTP:', error);
-      setMessage(error.message || 'An error occurred while requesting OTP');
+      setMessage(error.message || 'An error occurred while requesting OTP. Please try again.');
     }
   };
 
@@ -53,8 +59,20 @@ const ForgotPassword = () => {
     setLoading(true);
     setMessage('');
 
+    if (!otp || !newPassword || !confirmPassword) {
+      setMessage('Please fill in all fields');
+      setLoading(false);
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setMessage('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setMessage('Password must be at least 6 characters long');
       setLoading(false);
       return;
     }
@@ -68,17 +86,17 @@ const ForgotPassword = () => {
       setLoading(false);
 
       if (response.success) {
-        setMessage('Password updated successfully');
+        setMessage('Password updated successfully. Redirecting to login...');
         setTimeout(() => {
           navigate('/login');
         }, 2000);
       } else {
-        setMessage(response.message || 'OTP verification failed');
+        setMessage(response.message || 'OTP verification failed. Please try again.');
       }
     } catch (error) {
       setLoading(false);
       console.error('Error verifying OTP:', error);
-      setMessage(error.message || 'An error occurred while verifying OTP or updating the password');
+      setMessage(error.message || 'An error occurred while verifying OTP. Please try again.');
     }
   };
 
