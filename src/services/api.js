@@ -48,7 +48,13 @@ api.interceptors.request.use(
 
 // Add response interceptor to handle errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // If the response contains an image URL, update it to use the full backend URL
+    if (response.data && response.data.profileImage) {
+      response.data.profileImage = `${import.meta.env.VITE_API_URL}${response.data.profileImage}`;
+    }
+    return response;
+  },
   (error) => {
     console.error('API Error:', error);
     
@@ -209,16 +215,27 @@ const apiService = {
   getCourses: async () => {
     try {
       const response = await api.get('/courses');
+      if (!response.data) {
+        throw new Error('No courses data received');
+      }
       return handleApiResponse(response);
     } catch (error) {
+      console.error('Error fetching courses:', error);
       return handleApiError(error);
     }
   },
   getCourse: async (courseId) => {
     try {
+      if (!courseId) {
+        throw new Error('Course ID is required');
+      }
       const response = await api.get(`/courses/${courseId}`);
+      if (!response.data) {
+        throw new Error('No course data received');
+      }
       return handleApiResponse(response);
     } catch (error) {
+      console.error(`Error fetching course ${courseId}:`, error);
       return handleApiError(error);
     }
   },

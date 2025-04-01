@@ -61,6 +61,7 @@ const Home = () => {
         setUpdatedName(profileData.name);
       }
 
+      // Get course ID from URL or profile
       let courseId;
       const queryParams = new URLSearchParams(window.location.search);
       if (queryParams.has('courseId')) {
@@ -71,14 +72,37 @@ const Home = () => {
           : profileData.selectedCourse;
       }
 
+      // Fetch course data if we have a course ID
       if (courseId) {
-        const courseResponse = await apiService.getCourse(courseId);
-        if (courseResponse.success) {
-          setCourse(courseResponse.data);
-        } else {
-          console.error('Error fetching course:', courseResponse.message);
+        try {
+          const courseResponse = await apiService.getCourse(courseId);
+          if (courseResponse.success) {
+            setCourse(courseResponse.data);
+          } else {
+            console.error('Error fetching course:', courseResponse.message);
+            setCourse(null);
+          }
+        } catch (courseError) {
+          console.error('Error fetching course:', courseError);
+          setCourse(null);
         }
       } else {
+        // If no course is selected, try to fetch available courses
+        try {
+          const coursesResponse = await apiService.getCourses();
+          if (coursesResponse.success && coursesResponse.data.length > 0) {
+            // Set the first available course as default
+            const defaultCourse = coursesResponse.data[0];
+            setCourse(defaultCourse);
+            // Update profile with the default course
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('course', defaultCourse._id);
+            await apiService.updateProfile(formData);
+          }
+        } catch (coursesError) {
+          console.error('Error fetching courses:', coursesError);
+        }
         setCourse(null);
       }
     } catch (err) {

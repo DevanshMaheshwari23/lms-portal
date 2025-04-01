@@ -57,7 +57,12 @@ function Profile() {
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
-        setError(err.message || 'Error fetching profile');
+        if (err.message === 'Session expired. Please log in again.') {
+          // Redirect to login page
+          window.location.href = '/login';
+        } else {
+          setError(err.message || 'Error fetching profile');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -126,7 +131,12 @@ function Profile() {
       }
     } catch (err) {
       console.error('Error updating profile:', err);
-      setError('An error occurred. Please try again.');
+      if (err.message === 'Session expired. Please log in again.') {
+        // Redirect to login page
+        window.location.href = '/login';
+      } else {
+        setError(err.message || 'An error occurred. Please try again.');
+      }
     }
   };
 
