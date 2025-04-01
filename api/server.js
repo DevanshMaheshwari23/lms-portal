@@ -34,8 +34,15 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer');
-    res.header('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range');
+    res.header('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range, Set-Cookie');
     res.header('Vary', 'Origin, Accept-Encoding');
+    
+    // Add security headers
+    res.header('X-Content-Type-Options', 'nosniff');
+    res.header('X-Frame-Options', 'DENY');
+    res.header('X-XSS-Protection', '1; mode=block');
+    res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
   }
   next();
 });
@@ -53,8 +60,13 @@ app.use(session({
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/',
-    domain: '.onrender.com' // Set domain for production
-  }
+    domain: '.onrender.com', // Set domain for production
+    partitioned: true // Enable partitioned cookies for better security
+  },
+  name: 'lms_session', // Use a custom session name
+  proxy: true, // Trust the proxy
+  rolling: true, // Reset the cookie maxAge on every response
+  unset: 'destroy' // Destroy the session when unset
 }));
 
 // Add trust proxy for secure cookies
@@ -466,14 +478,21 @@ app.post('/api/login', async (req, res) => {
         }
 
         // Set session cookie explicitly
-        res.cookie('connect.sid', req.session.id, {
+        res.cookie('lms_session', req.session.id, {
           secure: true,
           sameSite: 'none',
           httpOnly: true,
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
           path: '/',
-          domain: '.onrender.com'
+          domain: '.onrender.com',
+          partitioned: true
         });
+
+        // Set additional headers for security
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('X-XSS-Protection', '1; mode=block');
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
         console.log('Login successful for:', email);
         return res.json({ 

@@ -85,7 +85,7 @@ const sessionManager = {
     // Clear all cookies
     document.cookie.split(';').forEach(cookie => {
       const [name] = cookie.split('=');
-      document.cookie = `${name.trim()}=;expires=${new Date().toUTCString()};path=/;domain=.onrender.com`;
+      document.cookie = `${name.trim()}=;expires=${new Date().toUTCString()};path=/;domain=.onrender.com;secure;samesite=none`;
     });
   },
 
@@ -107,9 +107,15 @@ const sessionManager = {
 
   refreshSession: async () => {
     try {
-      const response = await api.get('/current-user');
-      if (response.data && !response.data.message) {
-        sessionManager.saveSession(response.data);
+      const response = await api.get('/current-user', {
+        withCredentials: true,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.data && response.data.success && response.data.data) {
+        sessionManager.saveSession(response.data.data);
         return true;
       }
       return false;
