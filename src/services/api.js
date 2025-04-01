@@ -218,7 +218,13 @@ const apiService = {
       if (!response.data) {
         throw new Error('No courses data received');
       }
-      return handleApiResponse(response);
+      // Check if the response has a data property
+      const courses = response.data.data || response.data;
+      return {
+        success: true,
+        message: 'Courses fetched successfully',
+        data: courses
+      };
     } catch (error) {
       console.error('Error fetching courses:', error);
       return handleApiError(error);
@@ -233,49 +239,42 @@ const apiService = {
       if (!response.data) {
         throw new Error('No course data received');
       }
-      return handleApiResponse(response);
+      // Check if the response has a data property
+      const course = response.data.data || response.data;
+      return {
+        success: true,
+        message: 'Course fetched successfully',
+        data: course
+      };
     } catch (error) {
       console.error(`Error fetching course ${courseId}:`, error);
-      // If course not found, try to fetch available courses only once
-      if (error.response?.status === 404) {
-        try {
-          const coursesResponse = await api.get('/courses');
-          if (coursesResponse.data && coursesResponse.data.length > 0) {
-            return handleApiResponse({
-              data: coursesResponse.data[0]
-            });
-          }
-        } catch (coursesError) {
-          console.error('Error fetching available courses:', coursesError);
-        }
-      }
       return handleApiError(error);
     }
   },
   createCourse: async (courseData) => {
     try {
-      const response = await api.post('/admin/courses', courseData);
+      const response = await api.post('/courses', courseData);
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error creating course:', error);
       return handleApiError(error);
     }
   },
-  updateCourse: async (courseId, courseData) => {
+  updateCourse: async (id, courseData) => {
     try {
-      const response = await api.put(`/admin/courses/${courseId}`, courseData);
+      const response = await api.put(`/courses/${id}`, courseData);
       return handleApiResponse(response);
     } catch (error) {
-      console.error(`Error updating course ${courseId}:`, error);
+      console.error(`Error updating course ${id}:`, error);
       return handleApiError(error);
     }
   },
-  deleteCourse: async (courseId) => {
+  deleteCourse: async (id) => {
     try {
-      const response = await api.delete(`/admin/courses/${courseId}`);
+      const response = await api.delete(`/courses/${id}`);
       return handleApiResponse(response);
     } catch (error) {
-      console.error(`Error deleting course ${courseId}:`, error);
+      console.error(`Error deleting course ${id}:`, error);
       return handleApiError(error);
     }
   },
@@ -292,7 +291,7 @@ const apiService = {
   // Users
   getUsers: async () => {
     try {
-      const response = await api.get('/admin/users');
+      const response = await api.get('/users');
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -367,28 +366,19 @@ const apiService = {
   // Banned Users
   getBannedUsers: async () => {
     try {
-      const response = await api.get('/admin/banned-users');
+      const response = await api.get('/banned-users');
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching banned users:', error);
       return handleApiError(error);
     }
   },
-  blockUser: async (userId) => {
+  unblockUser: async (id) => {
     try {
-      const response = await api.post(`/admin/users/${userId}/block`);
+      const response = await api.put(`/banned-users/${id}/unblock`);
       return handleApiResponse(response);
     } catch (error) {
-      console.error(`Error blocking user ${userId}:`, error);
-      return handleApiError(error);
-    }
-  },
-  unblockUser: async (userId) => {
-    try {
-      const response = await api.post(`/admin/users/${userId}/unblock`);
-      return handleApiResponse(response);
-    } catch (error) {
-      console.error(`Error unblocking user ${userId}:`, error);
+      console.error(`Error unblocking user ${id}:`, error);
       return handleApiError(error);
     }
   },
@@ -413,30 +403,6 @@ const apiService = {
       return handleApiError(error);
     }
   },
-
-  // Admin Auth
-  adminLogin: async (credentials) => {
-    try {
-      const response = await api.post('/admin/login', credentials);
-      if (response.data.success) {
-        localStorage.setItem('isLoggedIn', 'true');
-      }
-      return handleApiResponse(response);
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  // Admin Dashboard
-  getDashboardStats: async () => {
-    try {
-      const response = await api.get('/admin/dashboard/stats');
-      return handleApiResponse(response);
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      return handleApiError(error);
-    }
-  }
 };
 
 export default apiService; 

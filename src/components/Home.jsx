@@ -61,6 +61,21 @@ const Home = () => {
         setUpdatedName(profileData.name);
       }
 
+      // First, try to fetch available courses
+      const coursesResponse = await apiService.getCourses();
+      if (!coursesResponse.success) {
+        console.error('Error fetching courses:', coursesResponse.message);
+        setCourse(null);
+        return;
+      }
+
+      const availableCourses = coursesResponse.data;
+      if (!availableCourses || availableCourses.length === 0) {
+        console.error('No courses available');
+        setCourse(null);
+        return;
+      }
+
       // Get course ID from URL or profile
       let courseId;
       const queryParams = new URLSearchParams(window.location.search);
@@ -72,40 +87,40 @@ const Home = () => {
           : profileData.selectedCourse;
       }
 
-      // Fetch course data if we have a course ID
+      // If we have a course ID, try to fetch that specific course
       if (courseId) {
         try {
           const courseResponse = await apiService.getCourse(courseId);
           if (courseResponse.success) {
             setCourse(courseResponse.data);
           } else {
-            console.error('Error fetching course:', courseResponse.message);
-            setCourse(null);
-          }
-        } catch (courseError) {
-          console.error('Error fetching course:', courseError);
-          setCourse(null);
-        }
-      } else {
-        // If no course is selected, try to fetch available courses
-        try {
-          const coursesResponse = await apiService.getCourses();
-          if (coursesResponse.success && coursesResponse.data.length > 0) {
-            // Set the first available course as default
-            const defaultCourse = coursesResponse.data[0];
-            setCourse(defaultCourse);
+            console.error('Error fetching specific course:', courseResponse.message);
+            // If specific course fails, use the first available course
+            setCourse(availableCourses[0]);
             // Update profile with the default course
             const formData = new FormData();
             formData.append('email', email);
-            formData.append('course', defaultCourse._id);
+            formData.append('course', availableCourses[0]._id);
             await apiService.updateProfile(formData);
-          } else {
-            setCourse(null);
           }
-        } catch (coursesError) {
-          console.error('Error fetching courses:', coursesError);
-          setCourse(null);
+        } catch (courseError) {
+          console.error('Error fetching specific course:', courseError);
+          // If specific course fails, use the first available course
+          setCourse(availableCourses[0]);
+          // Update profile with the default course
+          const formData = new FormData();
+          formData.append('email', email);
+          formData.append('course', availableCourses[0]._id);
+          await apiService.updateProfile(formData);
         }
+      } else {
+        // If no course is selected, use the first available course
+        setCourse(availableCourses[0]);
+        // Update profile with the default course
+        const formData = new FormData();
+        formData.append('email', email);
+        formData.append('course', availableCourses[0]._id);
+        await apiService.updateProfile(formData);
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
