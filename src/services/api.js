@@ -38,9 +38,10 @@ api.interceptors.request.use(
       config.url = `/api${config.url}`;
     }
     
-    // Add CORS headers for Render
-    config.headers['Access-Control-Allow-Origin'] = '*';
-    config.headers['Access-Control-Allow-Credentials'] = 'true';
+    // Remove CORS headers from client-side requests
+    // These should be set by the server
+    delete config.headers['Access-Control-Allow-Origin'];
+    delete config.headers['Access-Control-Allow-Credentials'];
     
     return config;
   },
