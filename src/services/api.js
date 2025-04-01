@@ -103,6 +103,8 @@ api.interceptors.response.use(
           });
           // Only redirect if we're not already on the login page
           if (!window.location.pathname.includes('/login')) {
+            // Store the current URL to redirect back after login
+            localStorage.setItem('redirectAfterLogin', window.location.pathname);
             window.location.href = '/login';
           }
           return Promise.reject({
@@ -475,6 +477,8 @@ const apiService = {
         }
       } catch (error) {
         if (error.response?.status === 401) {
+          // Store the current URL to redirect back after login
+          localStorage.setItem('redirectAfterLogin', window.location.pathname);
           throw new Error('Session expired. Please log in again.');
         }
         throw error;
@@ -520,6 +524,8 @@ const apiService = {
         });
       }
       if (error.response?.status === 401) {
+        // Store the current URL to redirect back after login
+        localStorage.setItem('redirectAfterLogin', window.location.pathname);
         return handleApiError({
           response: {
             data: {
