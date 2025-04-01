@@ -7,6 +7,10 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
+  },
+  maxRedirects: 5, // Limit redirects to prevent infinite loops
+  validateStatus: function (status) {
+    return status >= 200 && status < 500; // Don't reject if status is less than 500
   }
 });
 
