@@ -143,13 +143,26 @@ const apiService = {
   // Auth
   login: async (credentials) => {
     try {
+      // Remove any existing session data first
+      localStorage.removeItem('userEmail');
+      document.cookie.split(';').forEach(cookie => {
+        document.cookie = cookie
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
+
       const response = await api.post('/login', credentials);
-      // Store email in localStorage for fallback
+      
       if (response.data.success) {
+        // Store email in localStorage for fallback
         localStorage.setItem('userEmail', credentials.email);
+        // Set a session cookie
+        document.cookie = `session=${response.data.token || 'active'}; path=/; secure; samesite=strict`;
       }
+      
       return handleApiResponse(response);
     } catch (error) {
+      console.error('Login error:', error);
       return handleApiError(error);
     }
   },
@@ -332,10 +345,19 @@ const apiService = {
     }
   },
 
-  // Add forgotPassword method
-  forgotPassword: async (email) => {
+  // Password reset methods
+  requestOtp: async (email) => {
     try {
-      const response = await api.post('/forgot-password', { email });
+      const response = await api.post('/request-otp', { email });
+      return handleApiResponse(response);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  verifyOtp: async (data) => {
+    try {
+      const response = await api.post('/verify-otp', data);
       return handleApiResponse(response);
     } catch (error) {
       return handleApiError(error);
