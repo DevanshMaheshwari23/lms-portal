@@ -37,6 +37,10 @@ api.interceptors.request.use(
     if (!config.url.startsWith('/api/') && !config.url.includes('/profile/')) {
       config.url = `/api${config.url}`;
     }
+
+    // Remove any CORS headers from client-side requests
+    delete config.headers['Access-Control-Allow-Origin'];
+    delete config.headers['Access-Control-Allow-Credentials'];
     
     return config;
   },
