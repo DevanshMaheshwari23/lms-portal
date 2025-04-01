@@ -42,8 +42,8 @@ api.interceptors.request.use(
     delete config.headers['Access-Control-Allow-Origin'];
     delete config.headers['Access-Control-Allow-Credentials'];
 
-    // Only try to refresh session for non-auth endpoints
-    if (!config.url.includes('/login') && !config.url.includes('/register')) {
+    // Try to refresh session before making the request
+    if (config.url !== '/api/current-user' && config.url !== '/api/login') {
       try {
         const sessionRefreshed = await sessionManager.refreshSession();
         if (!sessionRefreshed) {
@@ -52,10 +52,10 @@ api.interceptors.request.use(
           return Promise.reject(new Error('Session expired. Please log in again.'));
         }
       } catch (error) {
-        // If session refresh fails, clear session and redirect
+        console.error('Session refresh error:', error);
         sessionManager.clearSession();
         sessionManager.redirectToLogin();
-        return Promise.reject(error);
+        return Promise.reject(new Error('Session expired. Please log in again.'));
       }
     }
     
@@ -72,10 +72,10 @@ const sessionManager = {
   clearSession: () => {
     localStorage.removeItem('userEmail');
     localStorage.removeItem('selectedCourse');
-    // Clear all cookies
     document.cookie.split(';').forEach(cookie => {
-      const [name] = cookie.split('=');
-      document.cookie = `${name.trim()}=;expires=${new Date().toUTCString()};path=/;domain=${window.location.hostname}`;
+      document.cookie = cookie
+        .replace(/^ +/, '')
+        .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
     });
   },
 
@@ -83,12 +83,8 @@ const sessionManager = {
     if (userData.email) {
       localStorage.setItem('userEmail', userData.email);
     }
-    if (userData.selectedCourse) {
-      localStorage.setItem('selectedCourse', 
-        typeof userData.selectedCourse === 'object' 
-          ? userData.selectedCourse._id 
-          : userData.selectedCourse
-      );
+    if (userData.course) {
+      localStorage.setItem('selectedCourse', userData.course);
     }
   },
 
@@ -102,13 +98,13 @@ const sessionManager = {
   refreshSession: async () => {
     try {
       const response = await api.get('/current-user');
-      if (response.data.success && response.data.data) {
+      if (response.data.success) {
         sessionManager.saveSession(response.data.data);
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Session refresh failed:', error);
+      console.error('Session refresh error:', error);
       return false;
     }
   }
@@ -225,9 +221,6 @@ const apiService = {
         throw new Error('Email and password are required');
       }
 
-      // Clear any existing session data before login
-      sessionManager.clearSession();
-
       const response = await api.post('/login', credentials, {
         headers: {
           'Content-Type': 'application/json',
@@ -254,28 +247,10 @@ const apiService = {
       if (responseData.success) {
         // Store email in localStorage for fallback
         localStorage.setItem('userEmail', credentials.email);
-        
-        // Verify session by getting current user
-        try {
-          const currentUserResponse = await api.get('/current-user');
-          if (currentUserResponse.data.success && currentUserResponse.data.data) {
-            sessionManager.saveSession(currentUserResponse.data.data);
-            return handleApiResponse({ data: responseData });
-          }
-        } catch (error) {
-          console.error('Session verification failed:', error);
-          sessionManager.clearSession();
-          return handleApiError({
-            response: {
-              data: {
-                message: 'Failed to establish session. Please try again.'
-              }
-            }
-          });
-        }
+        return handleApiResponse({ data: responseData });
+      } else {
+        return handleApiError({ response: { data: responseData } });
       }
-      
-      return handleApiError({ response: { data: responseData } });
     } catch (error) {
       console.error('Login error:', error);
       // Handle network errors specifically
@@ -290,7 +265,6 @@ const apiService = {
       }
       // Handle session expiration
       if (error.response?.status === 401) {
-        sessionManager.clearSession();
         return handleApiError({
           response: {
             data: {
@@ -360,37 +334,23 @@ const apiService = {
         // If no user data, try to get profile using email from localStorage
         const email = localStorage.getItem('userEmail');
         if (email) {
-          try {
-            const profileResponse = await api.get('/profile', {
-              params: { email },
-              headers: {
-                'Accept': 'application/json'
-              }
-            });
-            if (profileResponse.data.success && profileResponse.data.data) {
-              sessionManager.saveSession(profileResponse.data.data);
-              return handleApiResponse({ data: profileResponse.data });
+          const profileResponse = await api.get('/profile', {
+            params: { email },
+            headers: {
+              'Accept': 'application/json'
             }
-          } catch (error) {
-            console.error('Profile fetch failed:', error);
-          }
+          });
+          return handleApiResponse({ data: profileResponse.data });
         }
-        // If we get here, either no email was found or profile fetch failed
-        sessionManager.clearSession();
-        return handleApiError({ 
-          response: { 
-            data: { 
-              message: 'Session expired. Please log in again.' 
-            } 
-          } 
-        });
+        return handleApiError({ response: { data: responseData } });
       }
     } catch (error) {
       console.error('Error fetching current user:', error);
       // Handle session expiration
       if (error.response?.status === 401) {
         // Clear session data
-        sessionManager.clearSession();
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('selectedCourse');
         return handleApiError({
           response: {
             data: {

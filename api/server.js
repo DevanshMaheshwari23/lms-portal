@@ -17,9 +17,7 @@ const port = process.env.PORT || 5001;
 
 // Enable CORS and JSON parsing
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://lms-portal-qz69.onrender.com'
-    : 'http://localhost:5173',
+  origin: ['https://lms-portal-qz69.onrender.com', 'http://localhost:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Referer'],
@@ -41,13 +39,14 @@ app.use(bodyParser.json());
 // Session middleware configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'secret-key',
-  resave: false,
+  resave: true,
   saveUninitialized: false,
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
   }
 }));
 
