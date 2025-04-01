@@ -80,35 +80,11 @@ const Home = () => {
             setCourse(courseResponse.data);
           } else {
             console.error('Error fetching course:', courseResponse.message);
-            // Try to fetch available courses if the specific course fails
-            const coursesResponse = await apiService.getCourses();
-            if (coursesResponse.success && coursesResponse.data.length > 0) {
-              const defaultCourse = coursesResponse.data[0];
-              setCourse(defaultCourse);
-              // Update profile with the default course
-              const formData = new FormData();
-              formData.append('email', email);
-              formData.append('course', defaultCourse._id);
-              await apiService.updateProfile(formData);
-            } else {
-              setCourse(null);
-            }
+            setCourse(null);
           }
         } catch (courseError) {
           console.error('Error fetching course:', courseError);
-          // Try to fetch available courses if the specific course fails
-          const coursesResponse = await apiService.getCourses();
-          if (coursesResponse.success && coursesResponse.data.length > 0) {
-            const defaultCourse = coursesResponse.data[0];
-            setCourse(defaultCourse);
-            // Update profile with the default course
-            const formData = new FormData();
-            formData.append('email', email);
-            formData.append('course', defaultCourse._id);
-            await apiService.updateProfile(formData);
-          } else {
-            setCourse(null);
-          }
+          setCourse(null);
         }
       } else {
         // If no course is selected, try to fetch available courses
@@ -123,11 +99,13 @@ const Home = () => {
             formData.append('email', email);
             formData.append('course', defaultCourse._id);
             await apiService.updateProfile(formData);
+          } else {
+            setCourse(null);
           }
         } catch (coursesError) {
           console.error('Error fetching courses:', coursesError);
+          setCourse(null);
         }
-        setCourse(null);
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
