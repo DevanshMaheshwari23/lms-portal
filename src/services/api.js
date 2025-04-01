@@ -1,4 +1,62 @@
-// ... existing code ...
+import axios from 'axios';
+
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'https://lms-portal-4zyl5i66t-devanshs-projects-b9c496ea.vercel.app/api',
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Add request interceptor to handle errors
+api.interceptors.request.use(
+  (config) => {
+    // Log the request URL in development
+    if (import.meta.env.DEV) {
+      console.log('Making request to:', config.url);
+    }
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error);
+    if (error.response) {
+      switch (error.response.status) {
+        case 401:
+          // Unauthorized - let the AuthContext handle the navigation
+          console.error('Unauthorized access');
+          break;
+        case 403:
+          console.error('Access denied');
+          break;
+        case 404:
+          console.error('Resource not found');
+          break;
+        case 500:
+          console.error('Server error');
+          break;
+        default:
+          console.error('An error occurred');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// API methods
+export { api };  // Export the api instance
 export const apiService = {
   // Auth
   login: (credentials) => api.post('/api/login', credentials),
@@ -29,4 +87,5 @@ export const apiService = {
   getBannedUsers: () => api.get('/api/banned-users'),
   unblockUser: (id) => api.put(`/api/banned-users/${id}/unblock`),
 };
-// ... existing code ...
+
+export default apiService; 
