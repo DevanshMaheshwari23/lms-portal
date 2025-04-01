@@ -51,6 +51,10 @@ api.interceptors.response.use(
   (response) => {
     // If the response contains an image URL, update it to use the full backend URL
     if (response.data && response.data.profileImage) {
+      // Handle default profile image
+      if (response.data.profileImage === 'default-profile.png') {
+        response.data.profileImage = '/default-profile.png';
+      }
       // Ensure the URL starts with a slash
       const imagePath = response.data.profileImage.startsWith('/') 
         ? response.data.profileImage 
@@ -421,6 +425,12 @@ const apiService = {
         throw new Error('Email is required');
       }
 
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        throw new Error('Invalid email format');
+      }
+
       // Log the form data for debugging
       console.log('Updating profile with:', {
         email,
@@ -428,6 +438,19 @@ const apiService = {
         hasCourse: formData.has('course'),
         hasImage: formData.has('profileImage')
       });
+
+      // Validate image if present
+      const imageFile = formData.get('profileImage');
+      if (imageFile) {
+        // Check file size (max 5MB)
+        if (imageFile.size > 5 * 1024 * 1024) {
+          throw new Error('File size too large. Please upload an image smaller than 5MB.');
+        }
+        // Check file type
+        if (!imageFile.type.startsWith('image/')) {
+          throw new Error('Invalid file type. Please upload an image file (JPG, PNG, etc.).');
+        }
+      }
 
       const response = await api.put('/profile', formData, {
         headers: {
@@ -458,6 +481,15 @@ const apiService = {
     } catch (error) {
       console.error('Profile update error:', error);
       // Provide more specific error messages
+      if (error.response?.status === 400) {
+        return handleApiError({
+          response: {
+            data: {
+              message: error.response.data.message || 'Invalid profile data. Please check your input.'
+            }
+          }
+        });
+      }
       if (error.response?.status === 413) {
         return handleApiError({
           response: {
