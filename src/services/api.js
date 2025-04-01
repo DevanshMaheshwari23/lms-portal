@@ -2,13 +2,13 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: 'https://lms-portal-backend-qgui.onrender.com/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://lms-portal-backend-qgui.onrender.com',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  maxRedirects: 5, // Limit redirects to prevent infinite loops
+  maxRedirects: 0, // Disable redirects to prevent loops
   validateStatus: function (status) {
     return status >= 200 && status < 500; // Don't reject if status is less than 500
   }
@@ -32,6 +32,11 @@ api.interceptors.request.use(
 
     // Ensure credentials are included
     config.withCredentials = true;
+    
+    // Add API prefix if not present
+    if (!config.url.startsWith('/api/')) {
+      config.url = `/api${config.url}`;
+    }
     
     return config;
   },
