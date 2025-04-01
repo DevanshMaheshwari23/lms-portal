@@ -2,27 +2,46 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://lms-portal-4zyl5i66t-devanshs-projects-b9c496ea.vercel.app/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://lms-portal-backend-qgui.onrender.com',
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  maxRedirects: 0, // Disable redirects to prevent loops
+  validateStatus: function (status) {
+    return status >= 200 && status < 500; // Don't reject if status is less than 500
   }
 });
 
-// Add request interceptor to handle errors
+// Add request interceptor to handle authentication and paths
 api.interceptors.request.use(
   (config) => {
-    // Log the request URL in development
-    if (import.meta.env.DEV) {
-      console.log('Making request to:', config.url);
+    // Log request URL in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Request URL:', config.url);
     }
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+
+    // Add timestamp to prevent caching
+    if (config.method === 'get') {
+      config.params = {
+        ...config.params,
+        _t: Date.now()
+      };
     }
+
+    // Ensure credentials are included
+    config.withCredentials = true;
+    
+    // Add API prefix if not present
+    if (!config.url.startsWith('/api/')) {
+      config.url = `/api${config.url}`;
+    }
+    
     return config;
   },
   (error) => {
+    console.error('Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -32,60 +51,326 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error);
+    
+    // Handle network errors
+    if (error.code === 'ERR_NETWORK' || error.code === 'ERR_FAILED') {
+      console.error('Network error:', error);
+      // Clear any existing session data
+      localStorage.removeItem('userEmail');
+      document.cookie.split(';').forEach(cookie => {
+        document.cookie = cookie
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
+      return Promise.reject({
+        success: false,
+        message: 'Network error. Please check your connection and try again.',
+        error: 'Network Error'
+      });
+    }
+
+    // Handle different error status codes
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          // Unauthorized - let the AuthContext handle the navigation
+          console.error('API Error:', error.response.data);
           console.error('Unauthorized access');
-          break;
+          // Clear session data
+          localStorage.removeItem('userEmail');
+          // Clear cookies
+          document.cookie.split(';').forEach(cookie => {
+            document.cookie = cookie
+              .replace(/^ +/, '')
+              .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+          });
+          // Only redirect if we're not already on the login page
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
+          return Promise.reject({
+            success: false,
+            message: 'Session expired. Please log in again.',
+            error: error.response.data
+          });
         case 403:
           console.error('Access denied');
-          break;
+          return Promise.reject({
+            success: false,
+            message: 'Access denied. You do not have permission.',
+            error: error.response.data
+          });
         case 404:
           console.error('Resource not found');
-          break;
+          return Promise.reject({
+            success: false,
+            message: 'Resource not found.',
+            error: error.response.data
+          });
         case 500:
           console.error('Server error');
-          break;
+          return Promise.reject({
+            success: false,
+            message: 'Server error. Please try again later.',
+            error: error.response.data
+          });
         default:
-          console.error('An error occurred');
+          console.error('API Error:', error.response.data);
+          return Promise.reject({
+            success: false,
+            message: error.response.data.message || 'An error occurred.',
+            error: error.response.data
+          });
       }
     }
-    return Promise.reject(error);
+
+    return Promise.reject({
+      success: false,
+      message: 'An unexpected error occurred. Please try again.',
+      error: error.message
+    });
   }
 );
 
+// Helper functions for consistent response handling
+const handleApiResponse = (response) => {
+  return {
+    success: true,
+    message: response.data.message || 'Operation successful',
+    data: response.data.data || response.data
+  };
+};
+
+const handleApiError = (error) => {
+  console.error('API Error:', error);
+  return {
+    success: false,
+    message: error.response?.data?.message || 'An error occurred',
+    error: error.response?.data || error.message
+  };
+};
+
 // API methods
-export { api };  // Export the api instance
-export const apiService = {
+const apiService = {
   // Auth
-  login: (credentials) => api.post('/login', credentials),
-  logout: () => api.post('/logout'),
-  register: (userData) => api.post('/register', userData),
-  getCurrentUser: () => api.get('/current-user'),
+  login: async (credentials) => {
+    try {
+      const response = await api.post('/login', credentials);
+      
+      if (response.data.success) {
+        // Store email in localStorage for fallback
+        localStorage.setItem('userEmail', credentials.email);
+      }
+      
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error('Login error:', error);
+      return handleApiError(error);
+    }
+  },
+  logout: async () => {
+    try {
+      const response = await api.post('/logout');
+      // Clear session data
+      localStorage.removeItem('userEmail');
+      // Clear cookies
+      document.cookie.split(';').forEach(cookie => {
+        document.cookie = cookie
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
+      return handleApiResponse(response);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+  register: async (userData) => {
+    try {
+      const response = await api.post('/register', userData);
+      return handleApiResponse(response);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+  getCurrentUser: async () => {
+    try {
+      // Try to get the current user without checking email first
+      const response = await api.get('/current-user');
+      return handleApiResponse(response);
+    } catch (error) {
+      // If we get a 401, clear the stored email
+      if (error.response?.status === 401) {
+        localStorage.removeItem('userEmail');
+      }
+      return handleApiError(error);
+    }
+  },
 
   // Courses
-  getCourses: () => api.get('/courses'),
-  getCourse: (id) => api.get(`/courses/${id}`),
-  createCourse: (courseData) => api.post('/courses', courseData),
-  updateCourse: (id, courseData) => api.put(`/courses/${id}`, courseData),
-  deleteCourse: (id) => api.delete(`/courses/${id}`),
-  getCoursesWithUsers: () => api.get('/courses-with-users'),
+  getCourses: async () => {
+    try {
+      const response = await api.get('/courses');
+      return handleApiResponse(response);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+  getCourse: async (courseId) => {
+    try {
+      const response = await api.get(`/courses/${courseId}`);
+      return handleApiResponse(response);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+  createCourse: async (courseData) => {
+    try {
+      const response = await api.post('/courses', courseData);
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error('Error creating course:', error);
+      return handleApiError(error);
+    }
+  },
+  updateCourse: async (id, courseData) => {
+    try {
+      const response = await api.put(`/courses/${id}`, courseData);
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error updating course ${id}:`, error);
+      return handleApiError(error);
+    }
+  },
+  deleteCourse: async (id) => {
+    try {
+      const response = await api.delete(`/courses/${id}`);
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error deleting course ${id}:`, error);
+      return handleApiError(error);
+    }
+  },
+  getCoursesWithUsers: async () => {
+    try {
+      const response = await api.get('/courses-with-users');
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error('Error fetching courses with users:', error);
+      return handleApiError(error);
+    }
+  },
 
   // Users
-  getUsers: () => api.get('/users'),
-  getUser: (id) => api.get(`/users/${id}`),
-  updateUser: (id, userData) => api.put(`/users/${id}`, userData),
-  deleteUser: (id) => api.delete(`/users/${id}`),
+  getUsers: async () => {
+    try {
+      const response = await api.get('/users');
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return handleApiError(error);
+    }
+  },
+  getUser: async (id) => {
+    try {
+      const response = await api.get(`/users/${id}`);
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error fetching user ${id}:`, error);
+      return handleApiError(error);
+    }
+  },
+  updateUser: async (id, userData) => {
+    try {
+      const response = await api.put(`/users/${id}`, userData);
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error updating user ${id}:`, error);
+      return handleApiError(error);
+    }
+  },
+  deleteUser: async (id) => {
+    try {
+      const response = await api.delete(`/users/${id}`);
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error deleting user ${id}:`, error);
+      return handleApiError(error);
+    }
+  },
 
   // Profiles
-  getProfile: (email) => api.get(`/profile?email=${email}`),
-  updateProfile: (profileData) => api.put('/profile', profileData),
-  uploadProfileImage: (formData) => api.post('/profile', formData),
+  getProfile: async (email) => {
+    try {
+      const response = await api.get(`/profile/${email}`);
+      return handleApiResponse(response);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+  updateProfile: async (formData) => {
+    try {
+      const response = await api.put('/profile', formData, {
+        headers: {
+          // Let the browser set the Content-Type with boundary
+        }
+      });
+      return handleApiResponse(response);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+  uploadProfileImage: async (formData) => {
+    try {
+      const response = await api.post('/profile/upload', formData, {
+        headers: {
+          // Let the browser set the Content-Type with boundary
+        }
+      });
+      return handleApiResponse(response);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
 
   // Banned Users
-  getBannedUsers: () => api.get('/banned-users'),
-  unblockUser: (id) => api.put(`/banned-users/${id}/unblock`),
+  getBannedUsers: async () => {
+    try {
+      const response = await api.get('/banned-users');
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error('Error fetching banned users:', error);
+      return handleApiError(error);
+    }
+  },
+  unblockUser: async (id) => {
+    try {
+      const response = await api.put(`/banned-users/${id}/unblock`);
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error unblocking user ${id}:`, error);
+      return handleApiError(error);
+    }
+  },
+
+  // Password reset methods
+  requestOtp: async (email) => {
+    try {
+      const response = await api.post('/request-otp', { email });
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error('Error requesting OTP:', error);
+      return handleApiError(error);
+    }
+  },
+
+  verifyOtp: async (data) => {
+    try {
+      const response = await api.post('/verify-otp', data);
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      return handleApiError(error);
+    }
+  },
 };
 
 export default apiService; 

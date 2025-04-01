@@ -13,17 +13,18 @@ dotenv.config();
 
 // Create an Express app
 const app = express();
-const port = 5001;
+const port = process.env.PORT || 5001;
 
 // Enable CORS and JSON parsing
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://lms-portal-4zyl5i66t-devanshs-projects-b9c496ea.vercel.app', 'https://lms-portal-blush.vercel.app']
+    ? ['https://lms-portal-qz69.onrender.com', 'https://lms-portal-4dbs9szao-devanshs-projects-b9c496ea.vercel.app']
     : 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400 // Cache preflight requests for 24 hours
 }));
 app.use(bodyParser.json());
 
@@ -36,7 +37,8 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
   }
 }));
 
@@ -718,10 +720,10 @@ app.get('/admin', (req, res) => {
   }
 });
 
-// Catch-all route for client-side routing
+// Update the catch-all route to handle client-side routing properly
 app.get('*', (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
-    res.redirect('/');
+  if (req.path.startsWith('/api/')) {
+    res.status(404).json({ error: 'API endpoint not found' });
   } else {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
   }

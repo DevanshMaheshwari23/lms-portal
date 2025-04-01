@@ -2,7 +2,10 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './Profile.css';
-import api from '../services/api';
+import apiService from '../services/api';
+
+// Default profile image URL - using a data URL for a simple avatar
+const DEFAULT_PROFILE_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjY2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0yMCAyMXYtMmE0IDQgMCAwIDAtNC00SDhhNCA0IDAgMCAwLTQgNHYyIj48L3BhdGg+PGNpcmNsZSBjeD0iMTIiIGN5PSI3IiByPSI0Ij48L2NpcmNsZT48L3N2Zz4=';
 
 function Profile() {
   const [name, setName] = useState('');
@@ -11,52 +14,57 @@ function Profile() {
   const [error, setError] = useState('');
   const [existingProfile, setExistingProfile] = useState(null);
   const [courses, setCourses] = useState([]);
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(DEFAULT_PROFILE_IMAGE);
+  const [isLoading, setIsLoading] = useState(true);
   const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get('/courses');
-        if (!res.ok) throw new Error('Failed to fetch courses');
-        const data = await res.json();
-        setCourses(data);
+        setIsLoading(true);
+        setError('');
+
+        // Fetch courses
+        const coursesResponse = await apiService.getCourses();
+        if (coursesResponse.success) {
+          setCourses(coursesResponse.data);
+        } else {
+          setError(coursesResponse.message || 'Error fetching courses');
+        }
+
+        // Fetch profile if user exists
+        if (user?.email) {
+          const profileResponse = await apiService.getProfile(user.email);
+          if (profileResponse.success) {
+            const profileData = profileResponse.data;
+            setExistingProfile(profileData);
+            setName(profileData.name || '');
+            if (profileData.selectedCourse) {
+              const courseId =
+                typeof profileData.selectedCourse === 'object'
+                  ? profileData.selectedCourse._id
+                  : profileData.selectedCourse;
+              setSelectedCourse(courseId);
+            }
+            setPreviewUrl(profileData.profileImage || DEFAULT_PROFILE_IMAGE);
+          } else {
+            setError(profileResponse.message || 'Error fetching profile');
+          }
+        } else {
+          setError('User email not found. Please log in again.');
+          navigate('/login');
+        }
       } catch (err) {
-        setError('Error fetching courses');
+        console.error('Error fetching data:', err);
+        setError('Error loading profile data. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    const fetchProfile = async () => {
-      try {
-        if (!user || !user.email) {
-          setError('User email not found.');
-          return;
-        }
-        const res = await api.get(`/profile?email=${user.email}`);
-        if (res.ok) {
-          const profileData = await res.json();
-          setExistingProfile(profileData);
-          setName(profileData.name);
-          if (profileData.selectedCourse) {
-            const courseId =
-              typeof profileData.selectedCourse === 'object'
-                ? profileData.selectedCourse._id
-                : profileData.selectedCourse;
-            setSelectedCourse(courseId);
-          }
-          if (profileData.profileImage) {
-            setPreviewUrl(profileData.profileImage);
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-      }
-    };
-
-    fetchCourses();
-    fetchProfile();
-  }, [user]);
+    fetchData();
+  }, [user, navigate]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -89,33 +97,44 @@ function Profile() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('course', selectedCourse);
-    if (image) {
-      formData.append('profileImage', image);
-    }
-    formData.append('email', user.email);
-
     try {
+      setError('');
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('course', selectedCourse);
+      formData.append('email', user.email);
+      
+      // Only append the image if it's a new file
+      if (image instanceof File) {
+        formData.append('profileImage', image);
+      }
+
       let response;
       if (existingProfile) {
-        response = await api.put('/profile', formData);
+        response = await apiService.updateProfile(formData);
       } else {
-        response = await api.post('/profile', formData);
+        response = await apiService.uploadProfileImage(formData);
       }
 
-      if (response.ok) {
-        const updatedProfile = await response.json();
-        setUser(updatedProfile);
+      if (response.success) {
+        // Update the user context with the new profile data
+        setUser(prevUser => ({
+          ...prevUser,
+          ...response.data
+        }));
         navigate(`/home?courseId=${selectedCourse}`);
       } else {
-        setError('Error creating/updating profile');
+        setError(response.message || 'Error creating/updating profile');
       }
     } catch (err) {
+      console.error('Error updating profile:', err);
       setError('An error occurred. Please try again.');
     }
   };
+
+  if (isLoading) {
+    return <div className="loading">Loading...</div>;
+  }
 
   return (
     <div className="profile-page">

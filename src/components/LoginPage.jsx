@@ -1,6 +1,5 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import "./LoginPage.css";
 import Banner1 from "../assets/Banner1.jpg";
@@ -12,6 +11,7 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [currentImage, setCurrentImage] = useState(0);
   const images = [Banner1, Banner2, Banner3];
@@ -25,35 +25,91 @@ function LoginPage() {
     return () => clearInterval(interval);
   }, [images.length]);
 
+  // Check for existing session on component mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        // Clear any existing session data first
+        localStorage.removeItem('userEmail');
+        document.cookie.split(';').forEach(cookie => {
+          document.cookie = cookie
+            .replace(/^ +/, '')
+            .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+        });
+
+        // Try to get current user
+        const response = await apiService.getCurrentUser();
+        if (response.success) {
+          setUser(response.data);
+          if (response.data.selectedCourse) {
+            navigate('/home');
+          } else {
+            navigate('/profile');
+          }
+        }
+      } catch (err) {
+        // Ignore error if no session exists
+        console.log('No active session');
+      }
+    };
+
+    // Only check session if we're not already on the login page
+    if (!window.location.pathname.includes('/login')) {
+      checkSession();
+    }
+  }, [navigate, setUser]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    
     if (!email || !password) {
       setError('Email and password are required');
+      setIsLoading(false);
       return;
     }
+
     try {
-      const response = await apiService.login({ email, password });
+      // Clear any existing session data first
+      localStorage.removeItem('userEmail');
+      document.cookie.split(';').forEach(cookie => {
+        document.cookie = cookie
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
+
+      // First try to login
+      const loginResponse = await apiService.login({ email, password });
       
-      if (response.data.success) {
-        // Store email in localStorage for fallback
-        localStorage.setItem('userEmail', email);
-        // Fetch the user profile after successful login
+      if (loginResponse.success) {
+        // Then try to get the user profile
         const profileResponse = await apiService.getProfile(email);
-        const profile = profileResponse.data;
-        setUser(profile);
-        
-        // Navigate based on course selection
-        if (profile && profile.selectedCourse) {
-          navigate('/home');
+        if (profileResponse.success) {
+          const profile = profileResponse.data;
+          setUser(profile);
+          
+          // Navigate based on course selection
+          if (profile && profile.selectedCourse) {
+            navigate('/home');
+          } else {
+            navigate('/profile');
+          }
         } else {
-          navigate('/profile');
+          setError(profileResponse.message || 'Error fetching profile');
         }
       } else {
-        setError(response.data.message || "Login failed");
+        setError(loginResponse.message || 'Login failed');
       }
     } catch (err) {
-      console.error(err);
-      setError("An error occurred. Please try again.");
+      console.error('Login error:', err);
+      if (err.message === 'Network error. Please check your connection and try again.') {
+        setError('Unable to connect to the server. Please check your internet connection and try again.');
+      } else {
+        setError(err.message || 'An error occurred. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -85,6 +141,7 @@ function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="username"
                 required
+                disabled={isLoading}
               />
               <label htmlFor="password">Password</label>
               <input
@@ -95,27 +152,44 @@ function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 required
+                disabled={isLoading}
               />
               <div className="forgot-password">
                 <Link to="/forgot-password">Forgot password?</Link>
               </div>
-              <button type="submit" className="sign-in-btn">Sign in</button>
+              <button 
+                type="submit" 
+                className="sign-in-btn"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="loading-spinner"></span>
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </button>
             </form>
-            <div className="register">
-              Not a member? <Link to="/register">Register for free</Link>
+            <div className="register-link">
+              <p>Don't have an account? <Link to="/register">Register</Link></p>
             </div>
           </div>
         </div>
+
         <div className="right-section">
           <div className="hero-image">
-            {images.map((image, index) => (
-              <img
-                key={index}
-                src={image}
-                alt="Banner"
-                className={`carousel-image ${currentImage === index ? "visible" : ""}`}
-              />
-            ))}
+            <img
+              src={images[currentImage]}
+              alt="Learning Platform"
+              style={{
+                width: '100%',
+                height: 'auto',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              }}
+            />
           </div>
         </div>
       </div>

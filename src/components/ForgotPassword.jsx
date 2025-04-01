@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { api } from '../services/api';
+import apiService from '../services/api';
 import './ForgotPassword.css';
 import Banner1 from "../assets/Banner1.jpg";
 import Banner2 from "../assets/Banner2.jpg";
@@ -31,19 +31,25 @@ const ForgotPassword = () => {
     setLoading(true);
     setMessage('');
 
+    if (!email) {
+      setMessage('Please enter your email address');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await api.post('/request-otp', { email });
+      const response = await apiService.requestOtp(email);
       setLoading(false);
       
-      if (response.data.success) {
-        setMessage('OTP sent to your email(Check in spam folder)');
+      if (response.success) {
+        setMessage('OTP sent to your email (Check spam folder)');
       } else {
-        setMessage(response.data.message || 'Failed to send OTP');
+        setMessage(response.message || 'Failed to send OTP. Please try again.');
       }
     } catch (error) {
       setLoading(false);
-      console.error('Error requesting OTP', error);
-      setMessage('An error occurred while requesting OTP');
+      console.error('Error requesting OTP:', error);
+      setMessage(error.message || 'An error occurred while requesting OTP. Please try again.');
     }
   };
 
@@ -53,32 +59,44 @@ const ForgotPassword = () => {
     setLoading(true);
     setMessage('');
 
+    if (!otp || !newPassword || !confirmPassword) {
+      setMessage('Please fill in all fields');
+      setLoading(false);
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setMessage('Passwords do not match');
       setLoading(false);
       return;
     }
 
+    if (newPassword.length < 6) {
+      setMessage('Password must be at least 6 characters long');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await api.post('/verify-otp', {
+      const response = await apiService.verifyOtp({
         email,
         otp,
         newPassword,
       });
       setLoading(false);
 
-      if (response.data.success) {
-        setMessage('Password updated successfully');
+      if (response.success) {
+        setMessage('Password updated successfully. Redirecting to login...');
         setTimeout(() => {
           navigate('/login');
         }, 2000);
       } else {
-        setMessage(response.data.message || 'OTP verification failed');
+        setMessage(response.message || 'OTP verification failed. Please try again.');
       }
     } catch (error) {
       setLoading(false);
-      console.error('Error verifying OTP or updating password', error);
-      setMessage('An error occurred while verifying OTP or updating the password');
+      console.error('Error verifying OTP:', error);
+      setMessage(error.message || 'An error occurred while verifying OTP. Please try again.');
     }
   };
 
@@ -126,7 +144,7 @@ const ForgotPassword = () => {
             </form>
 
             {/* Step 2: Enter OTP and new password */}
-            {message === 'OTP sent to your email(Check in spam folder)' && (
+            {message === 'OTP sent to your email (Check spam folder)' && (
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label htmlFor="otp">Verification Code</label>

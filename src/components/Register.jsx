@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Banner1 from "../assets/Banner1.jpg";
 import Banner2 from "../assets/Banner2.jpg";
 import Banner3 from "../assets/Banner3.jpg";
-import { api } from '../services/api';
+import apiService from '../services/api';
 
 function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -40,19 +40,19 @@ function RegisterPage() {
     }
 
     try {
-      const response = await api.post('/register', {
+      const response = await apiService.register({
         email,
         password
       });
 
-      if (response.ok) {
-        navigate('/login');  // Redirect to profile page on success
+      if (response.success) {
+        navigate('/login');  // Redirect to login page on success
       } else {
-        const data = await response.json();
-        setError(data.message || 'Registration failed');
+        setError(response.message || 'Registration failed');
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      console.error('Registration error:', err);
+      setError(err.message || 'An error occurred. Please try again.');
     }
   };
 
@@ -83,10 +83,12 @@ function RegisterPage() {
               <input
                 id="email"
                 type="email"
-                placeholder="username@gmail.com"
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Email"
                 required
+                autoComplete="username"
               />
 
               <label htmlFor="password">Password</label>
@@ -97,6 +99,7 @@ function RegisterPage() {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required
+                autoComplete="new-password"
               />
 
               <label htmlFor="confirmPassword">Confirm Password</label>
@@ -107,6 +110,7 @@ function RegisterPage() {
                 value={confirmPassword} 
                 onChange={(e) => setConfirmPassword(e.target.value)} 
                 required
+                autoComplete="new-password"
               />
 
               <button type="submit" className="register-btn">

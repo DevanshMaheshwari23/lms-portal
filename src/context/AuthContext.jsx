@@ -20,10 +20,14 @@ export const AuthProvider = ({ children }) => {
     const fetchCurrentUser = async () => {
       setLoading(true);
       try {
-        // Include credentials if your auth token is in an HTTP‑only cookie
         const res = await apiService.getCurrentUser();
-        setUser(res.data);
-        setAuthError(null);
+        if (res.data) {
+          setUser(res.data);
+          setAuthError(null);
+        } else {
+          setUser(null);
+          setAuthError('No user data received');
+        }
       } catch (err) {
         console.error('Error fetching current user:', err);
         setUser(null);
@@ -39,20 +43,20 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Only fetch user if we're not on a public route
+    // Only fetch user if we're not on a public route and not already authenticated
     const publicRoutes = ['/login', '/register', '/adminlogin', '/forgot-password'];
-    if (!publicRoutes.includes(location.pathname)) {
+    if (!publicRoutes.includes(location.pathname) && !user) {
       fetchCurrentUser();
     } else {
       setLoading(false);
     }
-  }, [navigate, location]);
+  }, [navigate, location, user]);
 
   const logout = async () => {
     try {
-      // Call your logout endpoint if needed
       await apiService.logout();
       setUser(null);
+      setAuthError(null);
       navigate('/login');
     } catch (err) {
       console.error('Logout failed:', err);
