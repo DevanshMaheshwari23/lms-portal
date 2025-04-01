@@ -2,29 +2,27 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://lms-portal-backend-qgui.onrender.com',
+  baseURL: 'https://lms-portal-backend-qgui.onrender.com',
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
   }
 });
 
-// Add request interceptor to handle errors
+// Add request interceptor to handle authentication and paths
 api.interceptors.request.use(
   (config) => {
-    // Log the request URL in development
-    if (import.meta.env.DEV) {
-      console.log('Making request to:', config.url);
+    // Log request URL in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Request URL:', config.url);
     }
-    
-    // Ensure credentials are included
-    config.withCredentials = true;
-    
+
     // Ensure all requests have the correct path prefix
     if (!config.url.startsWith('/api/')) {
       config.url = `/api${config.url}`;
     }
-    
+
     // Add timestamp to prevent caching
     if (config.method === 'get') {
       config.params = {
@@ -32,11 +30,14 @@ api.interceptors.request.use(
         _t: Date.now()
       };
     }
+
+    // Ensure credentials are included
+    config.withCredentials = true;
     
     return config;
   },
   (error) => {
-    console.error('Request error:', error);
+    console.error('Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -45,74 +46,94 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error.response?.data || error.message);
+    console.error('API Error:', error);
     
     // Handle network errors
-    if (!error.response) {
+    if (error.code === 'ERR_NETWORK') {
       console.error('Network error:', error);
       return Promise.reject({
         success: false,
         message: 'Network error. Please check your connection.',
-        error: error.message
+        error: 'Network Error'
       });
     }
 
+    // Handle different error status codes
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          // Unauthorized - let the AuthContext handle the navigation
+          console.error('API Error:', error.response.data);
           console.error('Unauthorized access');
-          // Clear any existing session data
+          // Clear session data
+          localStorage.removeItem('userEmail');
+          // Clear cookies
           document.cookie.split(';').forEach(cookie => {
             document.cookie = cookie
               .replace(/^ +/, '')
               .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
           });
-          // Only redirect if not already on login page
+          // Redirect to login if not already there
           if (!window.location.pathname.includes('/login')) {
             window.location.href = '/login';
           }
-          break;
+          return Promise.reject({
+            success: false,
+            message: 'Session expired. Please log in again.',
+            error: error.response.data
+          });
         case 403:
           console.error('Access denied');
-          break;
+          return Promise.reject({
+            success: false,
+            message: 'Access denied. You do not have permission.',
+            error: error.response.data
+          });
         case 404:
           console.error('Resource not found');
-          break;
+          return Promise.reject({
+            success: false,
+            message: 'Resource not found.',
+            error: error.response.data
+          });
         case 500:
           console.error('Server error');
-          break;
+          return Promise.reject({
+            success: false,
+            message: 'Server error. Please try again later.',
+            error: error.response.data
+          });
         default:
-          console.error('An error occurred');
+          console.error('API Error:', error.response.data);
+          return Promise.reject({
+            success: false,
+            message: error.response.data.message || 'An error occurred.',
+            error: error.response.data
+          });
       }
     }
-    
-    return Promise.reject(error);
+
+    return Promise.reject({
+      success: false,
+      message: 'An unexpected error occurred.',
+      error: error.message
+    });
   }
 );
 
-// Helper function to handle API responses
+// Helper functions for consistent response handling
 const handleApiResponse = (response) => {
   return {
     success: true,
-    message: response.data?.message || 'Operation successful',
-    data: response.data
+    message: response.data.message || 'Operation successful',
+    data: response.data.data || response.data
   };
 };
 
-// Helper function to handle API errors
 const handleApiError = (error) => {
-  if (!error.response) {
-    return {
-      success: false,
-      message: 'Network error. Please check your connection.',
-      error: error.message
-    };
-  }
-  
+  console.error('API Error:', error);
   return {
     success: false,
-    message: error.response?.data?.message || 'Operation failed',
+    message: error.response?.data?.message || 'An error occurred',
     error: error.response?.data || error.message
   };
 };
@@ -123,18 +144,28 @@ const apiService = {
   login: async (credentials) => {
     try {
       const response = await api.post('/login', credentials);
+      // Store email in localStorage for fallback
+      if (response.data.success) {
+        localStorage.setItem('userEmail', credentials.email);
+      }
       return handleApiResponse(response);
     } catch (error) {
-      console.error('Login error:', error);
       return handleApiError(error);
     }
   },
   logout: async () => {
     try {
       const response = await api.post('/logout');
+      // Clear session data
+      localStorage.removeItem('userEmail');
+      // Clear cookies
+      document.cookie.split(';').forEach(cookie => {
+        document.cookie = cookie
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
       return handleApiResponse(response);
     } catch (error) {
-      console.error('Logout error:', error);
       return handleApiError(error);
     }
   },
@@ -143,7 +174,6 @@ const apiService = {
       const response = await api.post('/register', userData);
       return handleApiResponse(response);
     } catch (error) {
-      console.error('Registration error:', error);
       return handleApiError(error);
     }
   },
@@ -152,7 +182,6 @@ const apiService = {
       const response = await api.get('/current-user');
       return handleApiResponse(response);
     } catch (error) {
-      console.error('Error fetching current user:', error);
       return handleApiError(error);
     }
   },
@@ -163,16 +192,14 @@ const apiService = {
       const response = await api.get('/courses');
       return handleApiResponse(response);
     } catch (error) {
-      console.error('Error fetching courses:', error);
       return handleApiError(error);
     }
   },
-  getCourse: async (id) => {
+  getCourse: async (courseId) => {
     try {
-      const response = await api.get(`/courses/${id}`);
+      const response = await api.get(`/courses/${courseId}`);
       return handleApiResponse(response);
     } catch (error) {
-      console.error(`Error fetching course ${id}:`, error);
       return handleApiError(error);
     }
   },
@@ -257,7 +284,6 @@ const apiService = {
       const response = await api.get(`/profile/${email}`);
       return handleApiResponse(response);
     } catch (error) {
-      console.error('Error fetching profile:', error);
       return handleApiError(error);
     }
   },
@@ -270,7 +296,6 @@ const apiService = {
       });
       return handleApiResponse(response);
     } catch (error) {
-      console.error('Error updating profile:', error);
       return handleApiError(error);
     }
   },
@@ -283,7 +308,6 @@ const apiService = {
       });
       return handleApiResponse(response);
     } catch (error) {
-      console.error('Error uploading profile image:', error);
       return handleApiError(error);
     }
   },
@@ -309,5 +333,4 @@ const apiService = {
   },
 };
 
-export { api, apiService };
 export default apiService; 
