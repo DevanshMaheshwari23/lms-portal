@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './Profile.css';
-import api from '../services/api';
+import apiService from '../services/api';
 
 function Profile() {
   const [name, setName] = useState('');
@@ -18,10 +18,12 @@ function Profile() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await api.get('/courses');
-        if (!res.ok) throw new Error('Failed to fetch courses');
-        const data = await res.json();
-        setCourses(data);
+        const response = await apiService.getCourses();
+        if (response.success) {
+          setCourses(response.data);
+        } else {
+          setError('Error fetching courses');
+        }
       } catch (err) {
         setError('Error fetching courses');
       }
@@ -33,9 +35,9 @@ function Profile() {
           setError('User email not found.');
           return;
         }
-        const res = await api.get(`/profile?email=${user.email}`);
-        if (res.ok) {
-          const profileData = await res.json();
+        const response = await apiService.getProfile(user.email);
+        if (response.success) {
+          const profileData = response.data;
           setExistingProfile(profileData);
           setName(profileData.name);
           if (profileData.selectedCourse) {
@@ -48,9 +50,12 @@ function Profile() {
           if (profileData.profileImage) {
             setPreviewUrl(profileData.profileImage);
           }
+        } else {
+          setError(response.message || 'Error fetching profile');
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
+        setError('Error fetching profile');
       }
     };
 
@@ -100,17 +105,16 @@ function Profile() {
     try {
       let response;
       if (existingProfile) {
-        response = await api.put('/profile', formData);
+        response = await apiService.updateProfile(formData);
       } else {
-        response = await api.post('/profile', formData);
+        response = await apiService.uploadProfileImage(formData);
       }
 
-      if (response.ok) {
-        const updatedProfile = await response.json();
-        setUser(updatedProfile);
+      if (response.success) {
+        setUser(response.data);
         navigate(`/home?courseId=${selectedCourse}`);
       } else {
-        setError('Error creating/updating profile');
+        setError(response.message || 'Error creating/updating profile');
       }
     } catch (err) {
       setError('An error occurred. Please try again.');
