@@ -34,10 +34,6 @@ api.interceptors.request.use(
     // Ensure credentials are included
     config.withCredentials = true;
     
-    // Add CORS headers
-    config.headers['Access-Control-Allow-Origin'] = 'https://lms-portal-qz69.onrender.com';
-    config.headers['Access-Control-Allow-Credentials'] = 'true';
-    
     return config;
   },
   (error) => {
@@ -53,11 +49,11 @@ api.interceptors.response.use(
     console.error('API Error:', error);
     
     // Handle network errors
-    if (error.code === 'ERR_NETWORK') {
+    if (error.code === 'ERR_NETWORK' || error.code === 'ERR_FAILED') {
       console.error('Network error:', error);
       return Promise.reject({
         success: false,
-        message: 'Network error. Please check your connection.',
+        message: 'Network error. Please check your connection and try again.',
         error: 'Network Error'
       });
     }
@@ -118,7 +114,7 @@ api.interceptors.response.use(
 
     return Promise.reject({
       success: false,
-      message: 'An unexpected error occurred.',
+      message: 'An unexpected error occurred. Please try again.',
       error: error.message
     });
   }
@@ -352,6 +348,7 @@ const apiService = {
       const response = await api.post('/request-otp', { email });
       return handleApiResponse(response);
     } catch (error) {
+      console.error('Error requesting OTP:', error);
       return handleApiError(error);
     }
   },
@@ -361,6 +358,7 @@ const apiService = {
       const response = await api.post('/verify-otp', data);
       return handleApiResponse(response);
     } catch (error) {
+      console.error('Error verifying OTP:', error);
       return handleApiError(error);
     }
   },
