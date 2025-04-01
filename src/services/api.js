@@ -50,6 +50,35 @@ api.interceptors.request.use(
   }
 );
 
+// Add session management functions
+const sessionManager = {
+  clearSession: () => {
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('selectedCourse');
+    document.cookie.split(';').forEach(cookie => {
+      document.cookie = cookie
+        .replace(/^ +/, '')
+        .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+    });
+  },
+
+  saveSession: (userData) => {
+    if (userData.email) {
+      localStorage.setItem('userEmail', userData.email);
+    }
+    if (userData.course) {
+      localStorage.setItem('selectedCourse', userData.course);
+    }
+  },
+
+  redirectToLogin: () => {
+    if (!window.location.pathname.includes('/login')) {
+      localStorage.setItem('redirectAfterLogin', window.location.pathname);
+      window.location.href = '/login';
+    }
+  }
+};
+
 // Add response interceptor to handle errors
 api.interceptors.response.use(
   (response) => {
@@ -73,13 +102,7 @@ api.interceptors.response.use(
     // Handle network errors
     if (error.code === 'ERR_NETWORK' || error.code === 'ERR_FAILED') {
       console.error('Network error:', error);
-      // Clear any existing session data
-      localStorage.removeItem('userEmail');
-      document.cookie.split(';').forEach(cookie => {
-        document.cookie = cookie
-          .replace(/^ +/, '')
-          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-      });
+      sessionManager.clearSession();
       return Promise.reject({
         success: false,
         message: 'Network error. Please check your connection and try again.',
@@ -93,20 +116,8 @@ api.interceptors.response.use(
         case 401:
           console.error('API Error:', error.response.data);
           console.error('Unauthorized access');
-          // Clear session data
-          localStorage.removeItem('userEmail');
-          // Clear cookies
-          document.cookie.split(';').forEach(cookie => {
-            document.cookie = cookie
-              .replace(/^ +/, '')
-              .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-          });
-          // Only redirect if we're not already on the login page
-          if (!window.location.pathname.includes('/login')) {
-            // Store the current URL to redirect back after login
-            localStorage.setItem('redirectAfterLogin', window.location.pathname);
-            window.location.href = '/login';
-          }
+          sessionManager.clearSession();
+          sessionManager.redirectToLogin();
           return Promise.reject({
             success: false,
             message: 'Session expired. Please log in again.',
@@ -477,8 +488,8 @@ const apiService = {
         }
       } catch (error) {
         if (error.response?.status === 401) {
-          // Store the current URL to redirect back after login
-          localStorage.setItem('redirectAfterLogin', window.location.pathname);
+          sessionManager.clearSession();
+          sessionManager.redirectToLogin();
           throw new Error('Session expired. Please log in again.');
         }
         throw error;
@@ -513,9 +524,9 @@ const apiService = {
       // If update was successful, get the current user's course
       try {
         const currentUserResponse = await api.get('/current-user');
-        if (currentUserResponse.data.success && currentUserResponse.data.data?.course) {
-          // Store the selected course
-          localStorage.setItem('selectedCourse', currentUserResponse.data.data.course);
+        if (currentUserResponse.data.success && currentUserResponse.data.data) {
+          // Store the user data including course
+          sessionManager.saveSession(currentUserResponse.data.data);
         }
       } catch (error) {
         console.error('Error fetching updated user data:', error);
@@ -536,8 +547,8 @@ const apiService = {
         });
       }
       if (error.response?.status === 401) {
-        // Store the current URL to redirect back after login
-        localStorage.setItem('redirectAfterLogin', window.location.pathname);
+        sessionManager.clearSession();
+        sessionManager.redirectToLogin();
         return handleApiError({
           response: {
             data: {
