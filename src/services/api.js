@@ -18,6 +18,12 @@ api.interceptors.request.use(
     }
     // Ensure credentials are included
     config.withCredentials = true;
+    
+    // Ensure all requests have the correct path prefix
+    if (!config.url.startsWith('/api/')) {
+      config.url = `/api${config.url}`;
+    }
+    
     return config;
   },
   (error) => {
@@ -87,7 +93,7 @@ const apiService = {
   // Auth
   login: async (credentials) => {
     try {
-      const response = await api.post('/api/login', credentials);
+      const response = await api.post('/login', credentials);
       return handleApiResponse(response);
     } catch (error) {
       console.error('Login error:', error);
@@ -96,7 +102,7 @@ const apiService = {
   },
   logout: async () => {
     try {
-      const response = await api.post('/api/logout');
+      const response = await api.post('/logout');
       return handleApiResponse(response);
     } catch (error) {
       console.error('Logout error:', error);
@@ -105,7 +111,7 @@ const apiService = {
   },
   register: async (userData) => {
     try {
-      const response = await api.post('/api/register', userData);
+      const response = await api.post('/register', userData);
       return handleApiResponse(response);
     } catch (error) {
       console.error('Registration error:', error);
@@ -114,7 +120,7 @@ const apiService = {
   },
   getCurrentUser: async () => {
     try {
-      const response = await api.get('/api/current-user');
+      const response = await api.get('/current-user');
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching current user:', error);
@@ -125,7 +131,7 @@ const apiService = {
   // Courses
   getCourses: async () => {
     try {
-      const response = await api.get('/api/courses');
+      const response = await api.get('/courses');
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -134,7 +140,7 @@ const apiService = {
   },
   getCourse: async (id) => {
     try {
-      const response = await api.get(`/api/courses/${id}`);
+      const response = await api.get(`/courses/${id}`);
       return handleApiResponse(response);
     } catch (error) {
       console.error(`Error fetching course ${id}:`, error);
@@ -143,7 +149,7 @@ const apiService = {
   },
   createCourse: async (courseData) => {
     try {
-      const response = await api.post('/api/courses', courseData);
+      const response = await api.post('/courses', courseData);
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error creating course:', error);
@@ -152,7 +158,7 @@ const apiService = {
   },
   updateCourse: async (id, courseData) => {
     try {
-      const response = await api.put(`/api/courses/${id}`, courseData);
+      const response = await api.put(`/courses/${id}`, courseData);
       return handleApiResponse(response);
     } catch (error) {
       console.error(`Error updating course ${id}:`, error);
@@ -161,7 +167,7 @@ const apiService = {
   },
   deleteCourse: async (id) => {
     try {
-      const response = await api.delete(`/api/courses/${id}`);
+      const response = await api.delete(`/courses/${id}`);
       return handleApiResponse(response);
     } catch (error) {
       console.error(`Error deleting course ${id}:`, error);
@@ -170,7 +176,7 @@ const apiService = {
   },
   getCoursesWithUsers: async () => {
     try {
-      const response = await api.get('/api/courses-with-users');
+      const response = await api.get('/courses-with-users');
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching courses with users:', error);
@@ -181,7 +187,7 @@ const apiService = {
   // Users
   getUsers: async () => {
     try {
-      const response = await api.get('/api/users');
+      const response = await api.get('/users');
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -190,7 +196,7 @@ const apiService = {
   },
   getUser: async (id) => {
     try {
-      const response = await api.get(`/api/users/${id}`);
+      const response = await api.get(`/users/${id}`);
       return handleApiResponse(response);
     } catch (error) {
       console.error(`Error fetching user ${id}:`, error);
@@ -199,7 +205,7 @@ const apiService = {
   },
   updateUser: async (id, userData) => {
     try {
-      const response = await api.put(`/api/users/${id}`, userData);
+      const response = await api.put(`/users/${id}`, userData);
       return handleApiResponse(response);
     } catch (error) {
       console.error(`Error updating user ${id}:`, error);
@@ -208,7 +214,7 @@ const apiService = {
   },
   deleteUser: async (id) => {
     try {
-      const response = await api.delete(`/api/users/${id}`);
+      const response = await api.delete(`/users/${id}`);
       return handleApiResponse(response);
     } catch (error) {
       console.error(`Error deleting user ${id}:`, error);
@@ -219,7 +225,7 @@ const apiService = {
   // Profiles
   getProfile: async (email) => {
     try {
-      const response = await api.get(`/api/profile?email=${email}`);
+      const response = await api.get(`/profile?email=${email}`);
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -228,8 +234,7 @@ const apiService = {
   },
   updateProfile: async (formData) => {
     try {
-      // Remove the Content-Type header to let the browser set it with the boundary
-      const response = await api.put('/api/profile', formData);
+      const response = await api.put('/profile', formData);
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -238,8 +243,7 @@ const apiService = {
   },
   uploadProfileImage: async (formData) => {
     try {
-      // Remove the Content-Type header to let the browser set it with the boundary
-      const response = await api.post('/api/profile', formData);
+      const response = await api.post('/profile', formData);
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error uploading profile image:', error);
@@ -250,7 +254,7 @@ const apiService = {
   // Banned Users
   getBannedUsers: async () => {
     try {
-      const response = await api.get('/api/banned-users');
+      const response = await api.get('/banned-users');
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching banned users:', error);
@@ -259,7 +263,7 @@ const apiService = {
   },
   unblockUser: async (id) => {
     try {
-      const response = await api.put(`/api/banned-users/${id}/unblock`);
+      const response = await api.put(`/banned-users/${id}/unblock`);
       return handleApiResponse(response);
     } catch (error) {
       console.error(`Error unblocking user ${id}:`, error);
