@@ -22,18 +22,21 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Referer'],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  maxAge: 86400, // Cache preflight requests for 24 hours
+  maxAge: 86400,
   preflightContinue: false
 }));
 
 // Add additional headers middleware
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Origin', req.headers.origin);
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer');
-  res.header('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range');
-  res.header('Vary', 'Origin, Accept-Encoding');
+  const origin = req.headers.origin;
+  if (['https://lms-portal-qz69.onrender.com', 'http://localhost:5173'].includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer');
+    res.header('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range');
+    res.header('Vary', 'Origin, Accept-Encoding');
+  }
   next();
 });
 
@@ -49,7 +52,8 @@ app.use(session({
     sameSite: 'lax',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    path: '/'
+    path: '/',
+    domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
   }
 }));
 
@@ -431,10 +435,36 @@ app.post('/api/login', async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (isMatch) {
-      // Save minimal user info into session
-      req.session.user = { email: user.email };
+      // Get user profile
+      let profile = await Profile.findOne({ email });
+      if (!profile) {
+        profile = new Profile({
+          email,
+          name: email.split('@')[0],
+          selectedCourse: null,
+          profileImage: 'default-profile.png'
+        });
+        await profile.save();
+      }
+
+      // Save user info into session
+      req.session.user = { 
+        email: user.email,
+        name: profile.name,
+        selectedCourse: profile.selectedCourse,
+        profileImage: profile.profileImage
+      };
+
       console.log('Login successful for:', email);
-      return res.json({ success: true });
+      return res.json({ 
+        success: true,
+        data: {
+          email: user.email,
+          name: profile.name,
+          selectedCourse: profile.selectedCourse,
+          profileImage: profile.profileImage
+        }
+      });
     } else {
       console.log('Invalid credentials for:', email);
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -455,29 +485,17 @@ app.get('/api/current-user', async (req, res) => {
       // Check if the email is banned
       const banned = await BannedEmail.findOne({ email });
       if (banned) {
-        return res.status(401).json({ message: 'This account has been banned.' });
+        return res.status(401).json({ success: false, message: 'This account has been banned.' });
       }
       
-      // Fetch the user's profile
-      let profile = await Profile.findOne({ email }).populate('selectedCourse');
-      if (!profile) {
-        // Create a default profile if none exists
-        profile = new Profile({ 
-          email,
-          name: "Default Name", 
-          profileImage: "default-profile.png" 
-        });
-        await profile.save();
-      }
-      
-      // Return the profile data
-      return res.json(profile);
+      // Return the session user data
+      return res.json(req.session.user);
     } catch (err) {
-      console.error('Error fetching user profile:', err);
-      return res.status(500).json({ message: 'Error fetching user profile' });
+      console.error('Error fetching user data:', err);
+      return res.status(500).json({ success: false, message: 'Error fetching user data' });
     }
   }
-  return res.status(401).json({ message: 'Not authenticated' });
+  return res.status(401).json({ success: false, message: 'Not authenticated' });
 });
 
 /* =====================

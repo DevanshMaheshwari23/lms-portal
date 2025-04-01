@@ -102,8 +102,8 @@ const sessionManager = {
   refreshSession: async () => {
     try {
       const response = await api.get('/current-user');
-      if (response.data.success) {
-        sessionManager.saveSession(response.data.data);
+      if (response.data && !response.data.message) {
+        sessionManager.saveSession(response.data);
         return true;
       }
       return false;
@@ -152,7 +152,10 @@ api.interceptors.response.use(
           console.error('API Error:', error.response.data);
           console.error('Unauthorized access');
           sessionManager.clearSession();
-          sessionManager.redirectToLogin();
+          // Only redirect if not already on login page
+          if (!window.location.pathname.includes('/login')) {
+            sessionManager.redirectToLogin();
+          }
           return Promise.reject({
             success: false,
             message: 'Session expired. Please log in again.',
