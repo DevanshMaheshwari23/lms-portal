@@ -34,13 +34,6 @@ api.interceptors.request.use(
     // Ensure credentials are included
     config.withCredentials = true;
     
-    // Get the session token from cookie if it exists
-    const sessionCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
-    if (sessionCookie) {
-      const sessionToken = sessionCookie.split('=')[1];
-      config.headers['Authorization'] = `Bearer ${sessionToken}`;
-    }
-    
     return config;
   },
   (error) => {
@@ -164,10 +157,7 @@ const apiService = {
         // Store email in localStorage for fallback
         localStorage.setItem('userEmail', credentials.email);
         // Set a session cookie with proper attributes
-        const token = response.data.token || 'active';
-        document.cookie = `session=${token}; path=/; secure; samesite=strict`;
-        // Set the Authorization header for subsequent requests
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        document.cookie = `session=${response.data.token || 'active'}; path=/; secure; samesite=strict`;
       }
       
       return handleApiResponse(response);
@@ -202,9 +192,20 @@ const apiService = {
   },
   getCurrentUser: async () => {
     try {
+      // First check if we have a stored email
+      const email = localStorage.getItem('userEmail');
+      if (!email) {
+        throw new Error('No user email found');
+      }
+
+      // Try to get the current user
       const response = await api.get('/current-user');
       return handleApiResponse(response);
     } catch (error) {
+      // If we get a 401, clear the stored email
+      if (error.response?.status === 401) {
+        localStorage.removeItem('userEmail');
+      }
       return handleApiError(error);
     }
   },
