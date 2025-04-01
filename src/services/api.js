@@ -52,8 +52,7 @@ api.interceptors.response.use(
 );
 
 // API methods
-export { api };  // Export the api instance
-export const apiService = {
+const apiService = {
   // Auth
   login: (credentials) => api.post('/api/login', credentials),
   logout: () => api.post('/api/logout'),
@@ -84,4 +83,5 @@ export const apiService = {
   unblockUser: (id) => api.put(`/api/banned-users/${id}/unblock`),
 };
 
+export { api, apiService };
 export default apiService; 
