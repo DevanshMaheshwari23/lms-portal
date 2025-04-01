@@ -351,6 +351,24 @@ const apiService = {
       return handleApiError(error);
     }
   },
+  blockUser: async (userId) => {
+    try {
+      const response = await api.post(`/users/${userId}/block`);
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error blocking user ${userId}:`, error);
+      return handleApiError(error);
+    }
+  },
+  unblockUser: async (userId) => {
+    try {
+      const response = await api.post(`/users/${userId}/unblock`);
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error unblocking user ${userId}:`, error);
+      return handleApiError(error);
+    }
+  },
 
   // Profiles
   getProfile: async (email) => {
@@ -437,15 +455,6 @@ const apiService = {
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching banned users:', error);
-      return handleApiError(error);
-    }
-  },
-  unblockUser: async (id) => {
-    try {
-      const response = await api.put(`/banned-users/${id}/unblock`);
-      return handleApiResponse(response);
-    } catch (error) {
-      console.error(`Error unblocking user ${id}:`, error);
       return handleApiError(error);
     }
   },

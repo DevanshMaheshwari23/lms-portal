@@ -97,21 +97,25 @@ const Home = () => {
             console.error('Error fetching specific course:', courseResponse.message);
             // If specific course fails, use the first available course
             setCourse(availableCourses[0]);
-            // Update profile with the default course
-            const formData = new FormData();
-            formData.append('email', email);
-            formData.append('course', availableCourses[0]._id);
-            await apiService.updateProfile(formData);
+            // Only update profile if the course is different from what's already selected
+            if (profileData.selectedCourse !== availableCourses[0]._id) {
+              const formData = new FormData();
+              formData.append('email', email);
+              formData.append('course', availableCourses[0]._id);
+              await apiService.updateProfile(formData);
+            }
           }
         } catch (courseError) {
           console.error('Error fetching specific course:', courseError);
           // If specific course fails, use the first available course
           setCourse(availableCourses[0]);
-          // Update profile with the default course
-          const formData = new FormData();
-          formData.append('email', email);
-          formData.append('course', availableCourses[0]._id);
-          await apiService.updateProfile(formData);
+          // Only update profile if the course is different from what's already selected
+          if (profileData.selectedCourse !== availableCourses[0]._id) {
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('course', availableCourses[0]._id);
+            await apiService.updateProfile(formData);
+          }
         }
       } else {
         // If no course is selected, use the first available course
