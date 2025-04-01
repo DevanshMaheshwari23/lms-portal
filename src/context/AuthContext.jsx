@@ -20,23 +20,57 @@ export const AuthProvider = ({ children }) => {
     const fetchCurrentUser = async () => {
       setLoading(true);
       try {
+        // First try to get the current user
         const res = await apiService.getCurrentUser();
-        if (res.data) {
+        if (res.success && res.data) {
           setUser(res.data);
           setAuthError(null);
+          
+          // Store user data in localStorage for fallback
+          if (res.data.email) {
+            localStorage.setItem('userEmail', res.data.email);
+          }
+          if (res.data.selectedCourse) {
+            localStorage.setItem('selectedCourse', 
+              typeof res.data.selectedCourse === 'object' 
+                ? res.data.selectedCourse._id 
+                : res.data.selectedCourse
+            );
+          }
         } else {
-          setUser(null);
-          setAuthError('No user data received');
+          // If no user data, try to get profile using email from localStorage
+          const email = localStorage.getItem('userEmail');
+          if (email) {
+            const profileRes = await apiService.getProfile(email);
+            if (profileRes.success && profileRes.data) {
+              setUser(profileRes.data);
+              setAuthError(null);
+            } else {
+              setUser(null);
+              setAuthError('Failed to fetch user profile');
+            }
+          } else {
+            setUser(null);
+            setAuthError('No user data available');
+          }
         }
       } catch (err) {
         console.error('Error fetching current user:', err);
         setUser(null);
-        setAuthError('Failed to authenticate user');
         
-        // Only redirect to login if we're not already on a public route
-        const publicRoutes = ['/login', '/register', '/adminlogin', '/forgot-password'];
-        if (!publicRoutes.includes(location.pathname)) {
-          navigate('/login', { state: { from: location.pathname } });
+        // Handle specific error cases
+        if (err.message === 'Session expired. Please log in again.') {
+          setAuthError('Your session has expired. Please log in again.');
+          // Clear session data
+          localStorage.removeItem('userEmail');
+          localStorage.removeItem('selectedCourse');
+          // Only redirect to login if we're not already on a public route
+          const publicRoutes = ['/login', '/register', '/adminlogin', '/forgot-password'];
+          if (!publicRoutes.includes(location.pathname)) {
+            navigate('/login', { state: { from: location.pathname } });
+          }
+        } else {
+          setAuthError('Failed to authenticate user');
         }
       } finally {
         setLoading(false);

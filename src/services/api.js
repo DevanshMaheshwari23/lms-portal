@@ -255,6 +255,16 @@ const apiService = {
           }
         });
       }
+      // Handle session expiration
+      if (error.response?.status === 401) {
+        return handleApiError({
+          response: {
+            data: {
+              message: 'Session expired. Please log in again.'
+            }
+          }
+        });
+      }
       return handleApiError(error);
     }
   },
@@ -286,11 +296,60 @@ const apiService = {
     try {
       // Try to get the current user without checking email first
       const response = await api.get('/current-user');
-      return handleApiResponse(response);
+      
+      // Handle both JSON and text responses
+      let responseData;
+      if (typeof response.data === 'string') {
+        try {
+          responseData = JSON.parse(response.data);
+        } catch (e) {
+          responseData = { success: false, message: response.data };
+        }
+      } else {
+        responseData = response.data;
+      }
+
+      if (responseData.success && responseData.data) {
+        // Store user data in localStorage for fallback
+        if (responseData.data.email) {
+          localStorage.setItem('userEmail', responseData.data.email);
+        }
+        if (responseData.data.selectedCourse) {
+          localStorage.setItem('selectedCourse', 
+            typeof responseData.data.selectedCourse === 'object' 
+              ? responseData.data.selectedCourse._id 
+              : responseData.data.selectedCourse
+          );
+        }
+        return handleApiResponse({ data: responseData });
+      } else {
+        // If no user data, try to get profile using email from localStorage
+        const email = localStorage.getItem('userEmail');
+        if (email) {
+          const profileResponse = await api.get('/profile', {
+            params: { email },
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+          return handleApiResponse({ data: profileResponse.data });
+        }
+        return handleApiError({ response: { data: responseData } });
+      }
     } catch (error) {
-      // If we get a 401, clear the stored email
+      console.error('Error fetching current user:', error);
+      // Handle session expiration
       if (error.response?.status === 401) {
+        // Clear session data
         localStorage.removeItem('userEmail');
+        localStorage.removeItem('selectedCourse');
+        return handleApiError({
+          response: {
+            data: {
+              message: 'Session expired. Please log in again.'
+            }
+          }
+        });
       }
       return handleApiError(error);
     }

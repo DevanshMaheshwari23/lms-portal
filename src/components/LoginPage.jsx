@@ -67,20 +67,37 @@ function LoginPage() {
       const loginResponse = await apiService.login({ email, password });
       
       if (loginResponse.success) {
-        // Then try to get the user profile
-        const profileResponse = await apiService.getProfile(email);
-        if (profileResponse.success) {
-          const profile = profileResponse.data;
-          setUser(profile);
+        // Store email in localStorage for fallback
+        localStorage.setItem('userEmail', email);
+        
+        // Get the current user to check session
+        const currentUserResponse = await apiService.getCurrentUser();
+        if (currentUserResponse.success) {
+          const userData = currentUserResponse.data;
+          setUser(userData);
           
           // Navigate based on course selection
-          if (profile && profile.selectedCourse) {
+          if (userData && userData.selectedCourse) {
             navigate('/home');
           } else {
             navigate('/profile');
           }
         } else {
-          setError(profileResponse.message || 'Error fetching profile');
+          // If we can't get the current user, try to get the profile
+          const profileResponse = await apiService.getProfile(email);
+          if (profileResponse.success) {
+            const profile = profileResponse.data;
+            setUser(profile);
+            
+            // Navigate based on course selection
+            if (profile && profile.selectedCourse) {
+              navigate('/home');
+            } else {
+              navigate('/profile');
+            }
+          } else {
+            setError(profileResponse.message || 'Error fetching profile');
+          }
         }
       } else {
         setError(loginResponse.message || 'Login failed');
@@ -89,6 +106,11 @@ function LoginPage() {
       console.error('Login error:', err);
       if (err.message === 'Network error. Please check your connection and try again.') {
         setError('Unable to connect to the server. Please check your internet connection and try again.');
+      } else if (err.message === 'Session expired. Please log in again.') {
+        // Clear any existing session data
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('selectedCourse');
+        setError('Your session has expired. Please log in again.');
       } else {
         setError(err.message || 'An error occurred. Please try again.');
       }
