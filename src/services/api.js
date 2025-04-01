@@ -37,6 +37,12 @@ api.interceptors.request.use(
     if (!config.url.startsWith('/api/') && !config.url.includes('/profile/')) {
       config.url = `/api${config.url}`;
     }
+
+    // Add CORS headers for cross-origin requests
+    if (config.method === 'put' || config.method === 'post') {
+      config.headers['Access-Control-Allow-Origin'] = 'https://lms-portal-qz69.onrender.com';
+      config.headers['Access-Control-Allow-Credentials'] = 'true';
+    }
     
     return config;
   },
@@ -452,10 +458,26 @@ const apiService = {
         }
       }
 
+      // First try to get the current user to verify session
+      try {
+        const currentUserResponse = await api.get('/current-user');
+        if (!currentUserResponse.data.success) {
+          throw new Error('Session expired. Please log in again.');
+        }
+      } catch (error) {
+        if (error.response?.status === 401) {
+          throw new Error('Session expired. Please log in again.');
+        }
+        throw error;
+      }
+
       const response = await api.put('/profile', formData, {
         headers: {
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Access-Control-Allow-Origin': 'https://lms-portal-qz69.onrender.com',
+          'Access-Control-Allow-Credentials': 'true'
         },
+        withCredentials: true,
         validateStatus: function (status) {
           return status >= 200 && status < 500; // Don't reject if status is less than 500
         }
@@ -490,6 +512,15 @@ const apiService = {
           }
         });
       }
+      if (error.response?.status === 401) {
+        return handleApiError({
+          response: {
+            data: {
+              message: 'Session expired. Please log in again.'
+            }
+          }
+        });
+      }
       if (error.response?.status === 413) {
         return handleApiError({
           response: {
@@ -504,6 +535,15 @@ const apiService = {
           response: {
             data: {
               message: 'Invalid file type. Please upload an image file (JPG, PNG, etc.).'
+            }
+          }
+        });
+      }
+      if (error.response?.status === 500) {
+        return handleApiError({
+          response: {
+            data: {
+              message: 'Server error. Please try again later or contact support if the issue persists.'
             }
           }
         });
