@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: 'https://lms-portal-backend-qgui.onrender.com',
+  baseURL: 'https://lms-portal-backend-qgui.onrender.com/api',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -16,11 +16,6 @@ api.interceptors.request.use(
     // Log request URL in development
     if (process.env.NODE_ENV === 'development') {
       console.log('Request URL:', config.url);
-    }
-
-    // Ensure all requests have the correct path prefix
-    if (!config.url.startsWith('/api/')) {
-      config.url = `/api${config.url}`;
     }
 
     // Add timestamp to prevent caching
