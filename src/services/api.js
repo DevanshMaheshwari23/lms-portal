@@ -41,6 +41,10 @@ api.interceptors.response.use(
               .replace(/^ +/, '')
               .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
           });
+          // Redirect to login page if not already there
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
           break;
         case 403:
           console.error('Access denied');
@@ -65,10 +69,20 @@ const apiService = {
   login: async (credentials) => {
     try {
       const response = await api.post('/api/login', credentials);
-      return response.data;
+      // Ensure we return a consistent response format
+      return {
+        success: true,
+        message: 'Login successful',
+        data: response.data
+      };
     } catch (error) {
       console.error('Login error:', error);
-      throw error;
+      // Return a consistent error format
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Login failed',
+        error: error.response?.data || error.message
+      };
     }
   },
   logout: async () => {
