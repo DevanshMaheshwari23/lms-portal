@@ -30,6 +30,15 @@ function LoginPage() {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // Clear any existing session data first
+        localStorage.removeItem('userEmail');
+        document.cookie.split(';').forEach(cookie => {
+          document.cookie = cookie
+            .replace(/^ +/, '')
+            .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+        });
+
+        // Try to get current user
         const response = await apiService.getCurrentUser();
         if (response.success) {
           setUser(response.data);
@@ -60,10 +69,11 @@ function LoginPage() {
     }
 
     try {
-      const response = await apiService.login({ email, password });
+      // First try to login
+      const loginResponse = await apiService.login({ email, password });
       
-      if (response.success) {
-        // Fetch the user profile after successful login
+      if (loginResponse.success) {
+        // Then try to get the user profile
         const profileResponse = await apiService.getProfile(email);
         if (profileResponse.success) {
           const profile = profileResponse.data;
@@ -79,7 +89,7 @@ function LoginPage() {
           setError(profileResponse.message || 'Error fetching profile');
         }
       } else {
-        setError(response.message || 'Login failed');
+        setError(loginResponse.message || 'Login failed');
       }
     } catch (err) {
       console.error('Login error:', err);
