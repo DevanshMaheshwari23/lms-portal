@@ -63,63 +63,61 @@ api.interceptors.response.use(
   }
 );
 
+// Helper function to handle API responses
+const handleApiResponse = (response) => {
+  return {
+    success: true,
+    message: response.data?.message || 'Operation successful',
+    data: response.data
+  };
+};
+
+// Helper function to handle API errors
+const handleApiError = (error) => {
+  return {
+    success: false,
+    message: error.response?.data?.message || 'Operation failed',
+    error: error.response?.data || error.message
+  };
+};
+
 // API methods
 const apiService = {
   // Auth
   login: async (credentials) => {
     try {
       const response = await api.post('/api/login', credentials);
-      // Ensure we return a consistent response format
-      return {
-        success: true,
-        message: 'Login successful',
-        data: response.data
-      };
+      return handleApiResponse(response);
     } catch (error) {
       console.error('Login error:', error);
-      // Return a consistent error format
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Login failed',
-        error: error.response?.data || error.message
-      };
+      return handleApiError(error);
     }
   },
   logout: async () => {
     try {
       const response = await api.post('/api/logout');
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error('Logout error:', error);
-      throw error;
+      return handleApiError(error);
     }
   },
   register: async (userData) => {
     try {
       const response = await api.post('/api/register', userData);
-      // Ensure we return a consistent response format
-      return {
-        success: true,
-        message: 'User registered successfully',
-        data: response.data
-      };
+      return handleApiResponse(response);
     } catch (error) {
       console.error('Registration error:', error);
-      // Return a consistent error format
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Registration failed',
-        error: error.response?.data || error.message
-      };
+      return handleApiError(error);
     }
   },
   getCurrentUser: async () => {
     try {
       const response = await api.get('/api/current-user');
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching current user:', error);
-      throw error;
+      return handleApiError(error);
     }
   },
 
@@ -127,55 +125,55 @@ const apiService = {
   getCourses: async () => {
     try {
       const response = await api.get('/api/courses');
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching courses:', error);
-      throw error;
+      return handleApiError(error);
     }
   },
   getCourse: async (id) => {
     try {
       const response = await api.get(`/api/courses/${id}`);
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error(`Error fetching course ${id}:`, error);
-      throw error;
+      return handleApiError(error);
     }
   },
   createCourse: async (courseData) => {
     try {
       const response = await api.post('/api/courses', courseData);
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error('Error creating course:', error);
-      throw error;
+      return handleApiError(error);
     }
   },
   updateCourse: async (id, courseData) => {
     try {
       const response = await api.put(`/api/courses/${id}`, courseData);
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error(`Error updating course ${id}:`, error);
-      throw error;
+      return handleApiError(error);
     }
   },
   deleteCourse: async (id) => {
     try {
       const response = await api.delete(`/api/courses/${id}`);
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error(`Error deleting course ${id}:`, error);
-      throw error;
+      return handleApiError(error);
     }
   },
   getCoursesWithUsers: async () => {
     try {
       const response = await api.get('/api/courses-with-users');
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching courses with users:', error);
-      throw error;
+      return handleApiError(error);
     }
   },
 
@@ -183,37 +181,37 @@ const apiService = {
   getUsers: async () => {
     try {
       const response = await api.get('/api/users');
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching users:', error);
-      throw error;
+      return handleApiError(error);
     }
   },
   getUser: async (id) => {
     try {
       const response = await api.get(`/api/users/${id}`);
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error(`Error fetching user ${id}:`, error);
-      throw error;
+      return handleApiError(error);
     }
   },
   updateUser: async (id, userData) => {
     try {
       const response = await api.put(`/api/users/${id}`, userData);
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error(`Error updating user ${id}:`, error);
-      throw error;
+      return handleApiError(error);
     }
   },
   deleteUser: async (id) => {
     try {
       const response = await api.delete(`/api/users/${id}`);
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error(`Error deleting user ${id}:`, error);
-      throw error;
+      return handleApiError(error);
     }
   },
 
@@ -221,19 +219,19 @@ const apiService = {
   getProfile: async (email) => {
     try {
       const response = await api.get(`/api/profile?email=${email}`);
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching profile:', error);
-      throw error;
+      return handleApiError(error);
     }
   },
   updateProfile: async (profileData) => {
     try {
       const response = await api.put('/api/profile', profileData);
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error('Error updating profile:', error);
-      throw error;
+      return handleApiError(error);
     }
   },
   uploadProfileImage: async (formData) => {
@@ -243,10 +241,10 @@ const apiService = {
           'Content-Type': 'multipart/form-data'
         }
       });
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error('Error uploading profile image:', error);
-      throw error;
+      return handleApiError(error);
     }
   },
 
@@ -254,19 +252,19 @@ const apiService = {
   getBannedUsers: async () => {
     try {
       const response = await api.get('/api/banned-users');
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching banned users:', error);
-      throw error;
+      return handleApiError(error);
     }
   },
   unblockUser: async (id) => {
     try {
       const response = await api.put(`/api/banned-users/${id}/unblock`);
-      return response.data;
+      return handleApiResponse(response);
     } catch (error) {
       console.error(`Error unblocking user ${id}:`, error);
-      throw error;
+      return handleApiError(error);
     }
   },
 };
