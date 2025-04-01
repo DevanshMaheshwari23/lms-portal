@@ -16,7 +16,7 @@ const api = axios.create({
 
 // Add request interceptor to handle authentication and paths
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     // Log request URL in development
     if (process.env.NODE_ENV === 'development') {
       console.log('Request URL:', config.url);
@@ -41,6 +41,16 @@ api.interceptors.request.use(
     // Remove any CORS headers from client-side requests
     delete config.headers['Access-Control-Allow-Origin'];
     delete config.headers['Access-Control-Allow-Credentials'];
+
+    // Try to refresh session before making the request
+    if (config.url !== '/api/current-user' && config.url !== '/api/login') {
+      const sessionRefreshed = await sessionManager.refreshSession();
+      if (!sessionRefreshed) {
+        sessionManager.clearSession();
+        sessionManager.redirectToLogin();
+        return Promise.reject(new Error('Session expired. Please log in again.'));
+      }
+    }
     
     return config;
   },
@@ -75,6 +85,19 @@ const sessionManager = {
     if (!window.location.pathname.includes('/login')) {
       localStorage.setItem('redirectAfterLogin', window.location.pathname);
       window.location.href = '/login';
+    }
+  },
+
+  refreshSession: async () => {
+    try {
+      const response = await api.get('/current-user');
+      if (response.data.success) {
+        sessionManager.saveSession(response.data.data);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      return false;
     }
   }
 };
@@ -480,19 +503,10 @@ const apiService = {
         }
       }
 
-      // First try to get the current user to verify session
-      try {
-        const currentUserResponse = await api.get('/current-user');
-        if (!currentUserResponse.data.success) {
-          throw new Error('Session expired. Please log in again.');
-        }
-      } catch (error) {
-        if (error.response?.status === 401) {
-          sessionManager.clearSession();
-          sessionManager.redirectToLogin();
-          throw new Error('Session expired. Please log in again.');
-        }
-        throw error;
+      // Try to refresh session before proceeding
+      const sessionRefreshed = await sessionManager.refreshSession();
+      if (!sessionRefreshed) {
+        throw new Error('Session expired. Please log in again.');
       }
 
       const response = await api.put('/profile', formData, {
