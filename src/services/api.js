@@ -236,6 +236,15 @@ const apiService = {
       return handleApiResponse(response);
     } catch (error) {
       console.error(`Error fetching course ${courseId}:`, error);
+      // If course not found, try to fetch available courses
+      if (error.response?.status === 404) {
+        const coursesResponse = await api.get('/courses');
+        if (coursesResponse.data && coursesResponse.data.length > 0) {
+          return handleApiResponse({
+            data: coursesResponse.data[0]
+          });
+        }
+      }
       return handleApiError(error);
     }
   },
