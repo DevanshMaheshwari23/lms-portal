@@ -60,12 +60,36 @@ const apiService = {
   getCurrentUser: () => api.get('/api/current-user'),
 
   // Courses
-  getCourses: () => api.get('/api/courses'),
-  getCourse: (id) => api.get(`/api/courses/${id}`),
+  getCourses: async () => {
+    try {
+      const response = await api.get('/api/courses');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      throw error;
+    }
+  },
+  getCourse: async (id) => {
+    try {
+      const response = await api.get(`/api/courses/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching course ${id}:`, error);
+      throw error;
+    }
+  },
   createCourse: (courseData) => api.post('/api/courses', courseData),
   updateCourse: (id, courseData) => api.put(`/api/courses/${id}`, courseData),
   deleteCourse: (id) => api.delete(`/api/courses/${id}`),
-  getCoursesWithUsers: () => api.get('/api/courses-with-users'),
+  getCoursesWithUsers: async () => {
+    try {
+      const response = await api.get('/api/courses-with-users');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching courses with users:', error);
+      throw error;
+    }
+  },
 
   // Users
   getUsers: () => api.get('/api/users'),
