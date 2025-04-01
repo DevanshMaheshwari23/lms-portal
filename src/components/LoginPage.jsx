@@ -30,14 +30,6 @@ function LoginPage() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Clear any existing session data first
-        localStorage.removeItem('userEmail');
-        document.cookie.split(';').forEach(cookie => {
-          document.cookie = cookie
-            .replace(/^ +/, '')
-            .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-        });
-
         // Try to get current user
         const response = await apiService.getCurrentUser();
         if (response.success) {
