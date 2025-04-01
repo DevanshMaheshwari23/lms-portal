@@ -16,6 +16,8 @@ api.interceptors.request.use(
     if (import.meta.env.DEV) {
       console.log('Making request to:', config.url);
     }
+    // Ensure credentials are included
+    config.withCredentials = true;
     return config;
   },
   (error) => {
@@ -33,6 +35,12 @@ api.interceptors.response.use(
         case 401:
           // Unauthorized - let the AuthContext handle the navigation
           console.error('Unauthorized access');
+          // Clear any existing session data
+          document.cookie.split(';').forEach(cookie => {
+            document.cookie = cookie
+              .replace(/^ +/, '')
+              .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+          });
           break;
         case 403:
           console.error('Access denied');
