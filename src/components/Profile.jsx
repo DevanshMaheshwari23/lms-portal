@@ -27,7 +27,7 @@ function Profile() {
         }
       } catch (err) {
         console.error('Error fetching courses:', err);
-        setError('Error fetching courses');
+        setError(err.message || 'Error fetching courses');
       }
     };
 
@@ -35,12 +35,13 @@ function Profile() {
       try {
         if (!user || !user.email) {
           setError('User email not found.');
+          setIsLoading(false);
           return;
         }
         const response = await apiService.getProfile(user.email);
         if (response.success) {
           setExistingProfile(response.data);
-          setName(response.data.name);
+          setName(response.data.name || '');
           if (response.data.selectedCourse) {
             const courseId =
               typeof response.data.selectedCourse === 'object'
@@ -56,7 +57,7 @@ function Profile() {
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
-        setError('Error fetching profile');
+        setError(err.message || 'Error fetching profile');
       } finally {
         setIsLoading(false);
       }

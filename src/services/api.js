@@ -33,8 +33,8 @@ api.interceptors.request.use(
     // Ensure credentials are included
     config.withCredentials = true;
     
-    // Add API prefix if not present
-    if (!config.url.startsWith('/api/')) {
+    // Add API prefix if not present and not already an API endpoint
+    if (!config.url.startsWith('/api/') && !config.url.includes('/profile/')) {
       config.url = `/api${config.url}`;
     }
     
@@ -300,7 +300,8 @@ const apiService = {
   // Profiles
   getProfile: async (email) => {
     try {
-      const response = await api.get('/profile', {
+      // Use the correct URL format with query parameters
+      const response = await api.get('/api/profile', {
         params: { email }
       });
       return handleApiResponse(response);
