@@ -226,13 +226,10 @@ const apiService = {
       return handleApiError(error);
     }
   },
-  updateProfile: async (profileData) => {
+  updateProfile: async (formData) => {
     try {
-      const response = await api.put('/api/profile', profileData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      // Remove the Content-Type header to let the browser set it with the boundary
+      const response = await api.put('/api/profile', formData);
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -241,11 +238,8 @@ const apiService = {
   },
   uploadProfileImage: async (formData) => {
     try {
-      const response = await api.post('/api/profile', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      // Remove the Content-Type header to let the browser set it with the boundary
+      const response = await api.post('/api/profile', formData);
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error uploading profile image:', error);
