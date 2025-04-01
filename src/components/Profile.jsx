@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './Profile.css';
-import api from '../services/api';
+import apiService from '../services/api';
 
 function Profile() {
   const [name, setName] = useState('');
@@ -19,9 +19,11 @@ function Profile() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await api.get('/courses');
-        if (response.data) {
+        const response = await apiService.getCourses();
+        if (response.success) {
           setCourses(response.data);
+        } else {
+          setError(response.message || 'Error fetching courses');
         }
       } catch (err) {
         console.error('Error fetching courses:', err);
@@ -35,12 +37,8 @@ function Profile() {
           setError('User email not found.');
           return;
         }
-        const response = await api.get('/profile', {
-          params: {
-            email: user.email
-          }
-        });
-        if (response.data) {
+        const response = await apiService.getProfile(user.email);
+        if (response.success) {
           setExistingProfile(response.data);
           setName(response.data.name);
           if (response.data.selectedCourse) {
@@ -53,6 +51,8 @@ function Profile() {
           if (response.data.profileImage) {
             setPreviewUrl(response.data.profileImage);
           }
+        } else {
+          setError(response.message || 'Error fetching profile');
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
@@ -108,12 +108,12 @@ function Profile() {
     try {
       let response;
       if (existingProfile) {
-        response = await api.put('/profile', formData);
+        response = await apiService.updateProfile(formData);
       } else {
-        response = await api.post('/profile', formData);
+        response = await apiService.uploadProfileImage(formData);
       }
 
-      if (response.data) {
+      if (response.success) {
         // Update the user context with the new profile data
         setUser(prevUser => ({
           ...prevUser,
@@ -121,7 +121,7 @@ function Profile() {
         }));
         navigate(`/home?courseId=${selectedCourse}`);
       } else {
-        setError('Error creating/updating profile');
+        setError(response.message || 'Error creating/updating profile');
       }
     } catch (err) {
       console.error('Error updating profile:', err);

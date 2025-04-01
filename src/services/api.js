@@ -300,7 +300,9 @@ const apiService = {
   // Profiles
   getProfile: async (email) => {
     try {
-      const response = await api.get(`/profile/${email}`);
+      const response = await api.get('/profile', {
+        params: { email }
+      });
       return handleApiResponse(response);
     } catch (error) {
       return handleApiError(error);
@@ -320,7 +322,7 @@ const apiService = {
   },
   uploadProfileImage: async (formData) => {
     try {
-      const response = await api.post('/profile/upload', formData, {
+      const response = await api.post('/profile', formData, {
         headers: {
           // Let the browser set the Content-Type with boundary
         }
