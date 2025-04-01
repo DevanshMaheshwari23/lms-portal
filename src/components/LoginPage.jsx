@@ -12,6 +12,7 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [currentImage, setCurrentImage] = useState(0);
   const images = [Banner1, Banner2, Banner3];
@@ -28,10 +29,31 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     
     if (!email || !password) {
       setError('Email and password are required');
+      setIsLoading(false);
       return;
+    }
+
+    try {
+      // First, try to get current user to check if already logged in
+      const currentUserResponse = await apiService.getCurrentUser();
+      if (currentUserResponse.success) {
+        // User is already logged in, redirect to appropriate page
+        const profile = currentUserResponse.data;
+        setUser(profile);
+        if (profile && profile.selectedCourse) {
+          navigate('/home');
+        } else {
+          navigate('/profile');
+        }
+        return;
+      }
+    } catch (err) {
+      // Ignore error if user is not logged in
+      console.log('No active session');
     }
 
     try {
@@ -62,6 +84,8 @@ function LoginPage() {
     } catch (err) {
       console.error('Login error:', err);
       setError(err.message || 'An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -93,6 +117,7 @@ function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="username"
                 required
+                disabled={isLoading}
               />
               <label htmlFor="password">Password</label>
               <input
@@ -103,11 +128,18 @@ function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 required
+                disabled={isLoading}
               />
               <div className="forgot-password">
                 <Link to="/forgot-password">Forgot password?</Link>
               </div>
-              <button type="submit" className="sign-in-btn">Sign in</button>
+              <button 
+                type="submit" 
+                className="sign-in-btn"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Signing in...' : 'Sign in'}
+              </button>
             </form>
             <div className="register">
               Not a member? <Link to="/register">Register for free</Link>
