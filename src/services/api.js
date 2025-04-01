@@ -16,12 +16,21 @@ api.interceptors.request.use(
     if (import.meta.env.DEV) {
       console.log('Making request to:', config.url);
     }
+    
     // Ensure credentials are included
     config.withCredentials = true;
     
     // Ensure all requests have the correct path prefix
     if (!config.url.startsWith('/api/')) {
       config.url = `/api${config.url}`;
+    }
+    
+    // Add timestamp to prevent caching
+    if (config.method === 'get') {
+      config.params = {
+        ...config.params,
+        _t: Date.now()
+      };
     }
     
     return config;
@@ -37,6 +46,17 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error.response?.data || error.message);
+    
+    // Handle network errors
+    if (!error.response) {
+      console.error('Network error:', error);
+      return Promise.reject({
+        success: false,
+        message: 'Network error. Please check your connection.',
+        error: error.message
+      });
+    }
+
     if (error.response) {
       switch (error.response.status) {
         case 401:
@@ -48,7 +68,7 @@ api.interceptors.response.use(
               .replace(/^ +/, '')
               .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
           });
-          // Redirect to login page if not already there
+          // Only redirect if not already on login page
           if (!window.location.pathname.includes('/login')) {
             window.location.href = '/login';
           }
@@ -66,6 +86,7 @@ api.interceptors.response.use(
           console.error('An error occurred');
       }
     }
+    
     return Promise.reject(error);
   }
 );
@@ -81,6 +102,14 @@ const handleApiResponse = (response) => {
 
 // Helper function to handle API errors
 const handleApiError = (error) => {
+  if (!error.response) {
+    return {
+      success: false,
+      message: 'Network error. Please check your connection.',
+      error: error.message
+    };
+  }
+  
   return {
     success: false,
     message: error.response?.data?.message || 'Operation failed',
@@ -225,7 +254,7 @@ const apiService = {
   // Profiles
   getProfile: async (email) => {
     try {
-      const response = await api.get(`/profile?email=${email}`);
+      const response = await api.get(`/profile/${email}`);
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -234,7 +263,11 @@ const apiService = {
   },
   updateProfile: async (formData) => {
     try {
-      const response = await api.put('/profile', formData);
+      const response = await api.put('/profile', formData, {
+        headers: {
+          // Let the browser set the Content-Type with boundary
+        }
+      });
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -243,7 +276,11 @@ const apiService = {
   },
   uploadProfileImage: async (formData) => {
     try {
-      const response = await api.post('/profile', formData);
+      const response = await api.post('/profile/upload', formData, {
+        headers: {
+          // Let the browser set the Content-Type with boundary
+        }
+      });
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error uploading profile image:', error);
