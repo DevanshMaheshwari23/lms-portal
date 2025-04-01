@@ -83,10 +83,20 @@ const apiService = {
   register: async (userData) => {
     try {
       const response = await api.post('/api/register', userData);
-      return response.data;
+      // Ensure we return a consistent response format
+      return {
+        success: true,
+        message: 'User registered successfully',
+        data: response.data
+      };
     } catch (error) {
       console.error('Registration error:', error);
-      throw error;
+      // Return a consistent error format
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Registration failed',
+        error: error.response?.data || error.message
+      };
     }
   },
   getCurrentUser: async () => {
