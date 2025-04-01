@@ -51,7 +51,11 @@ api.interceptors.response.use(
   (response) => {
     // If the response contains an image URL, update it to use the full backend URL
     if (response.data && response.data.profileImage) {
-      response.data.profileImage = `${import.meta.env.VITE_API_URL}${response.data.profileImage}`;
+      // Ensure the URL starts with a slash
+      const imagePath = response.data.profileImage.startsWith('/') 
+        ? response.data.profileImage 
+        : `/${response.data.profileImage}`;
+      response.data.profileImage = `${import.meta.env.VITE_API_URL}${imagePath}`;
     }
     return response;
   },
@@ -406,13 +410,72 @@ const apiService = {
   },
   updateProfile: async (formData) => {
     try {
+      // Validate formData
+      if (!formData) {
+        throw new Error('Form data is required');
+      }
+
+      // Ensure required fields are present
+      const email = formData.get('email');
+      if (!email) {
+        throw new Error('Email is required');
+      }
+
+      // Log the form data for debugging
+      console.log('Updating profile with:', {
+        email,
+        hasName: formData.has('name'),
+        hasCourse: formData.has('course'),
+        hasImage: formData.has('profileImage')
+      });
+
       const response = await api.put('/profile', formData, {
         headers: {
-          // Let the browser set the Content-Type with boundary
+          'Accept': 'application/json'
+        },
+        validateStatus: function (status) {
+          return status >= 200 && status < 500; // Don't reject if status is less than 500
         }
       });
-      return handleApiResponse(response);
+
+      // Handle both JSON and text responses
+      let responseData;
+      if (typeof response.data === 'string') {
+        try {
+          responseData = JSON.parse(response.data);
+        } catch (e) {
+          responseData = { success: false, message: response.data };
+        }
+      } else {
+        responseData = response.data;
+      }
+
+      if (!responseData.success) {
+        throw new Error(responseData.message || 'Failed to update profile');
+      }
+
+      return handleApiResponse({ data: responseData });
     } catch (error) {
+      console.error('Profile update error:', error);
+      // Provide more specific error messages
+      if (error.response?.status === 413) {
+        return handleApiError({
+          response: {
+            data: {
+              message: 'File size too large. Please upload an image smaller than 5MB.'
+            }
+          }
+        });
+      }
+      if (error.response?.status === 415) {
+        return handleApiError({
+          response: {
+            data: {
+              message: 'Invalid file type. Please upload an image file (JPG, PNG, etc.).'
+            }
+          }
+        });
+      }
       return handleApiError(error);
     }
   },
