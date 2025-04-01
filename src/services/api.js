@@ -34,6 +34,11 @@ api.interceptors.request.use(
     // Ensure credentials are included
     config.withCredentials = true;
     
+    // Remove CORS headers from client-side requests
+    // These should be set by the server
+    delete config.headers['Access-Control-Allow-Origin'];
+    delete config.headers['Access-Control-Allow-Credentials'];
+    
     return config;
   },
   (error) => {
@@ -156,7 +161,7 @@ const apiService = {
       if (response.data.success) {
         // Store email in localStorage for fallback
         localStorage.setItem('userEmail', credentials.email);
-        // Set a session cookie
+        // Set a session cookie with proper attributes
         document.cookie = `session=${response.data.token || 'active'}; path=/; secure; samesite=strict`;
       }
       
