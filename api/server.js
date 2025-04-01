@@ -13,12 +13,12 @@ dotenv.config();
 
 // Create an Express app
 const app = express();
-const port = 5001;
+const port = process.env.PORT || 5001;
 
 // Enable CORS and JSON parsing
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://lms-portal-qz69.onrender.com']
+    ? ['https://lms-portal-qz69.onrender.com', 'https://lms-portal-4dbs9szao-devanshs-projects-b9c496ea.vercel.app']
     : 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
