@@ -331,6 +331,16 @@ const apiService = {
       return handleApiError(error);
     }
   },
+
+  // Add forgotPassword method
+  forgotPassword: async (email) => {
+    try {
+      const response = await api.post('/forgot-password', { email });
+      return handleApiResponse(response);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
 };
 
 export default apiService; 
