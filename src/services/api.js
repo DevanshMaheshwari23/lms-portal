@@ -510,6 +510,18 @@ const apiService = {
         throw new Error(responseData.message || 'Failed to update profile');
       }
 
+      // If update was successful, get the current user's course
+      try {
+        const currentUserResponse = await api.get('/current-user');
+        if (currentUserResponse.data.success && currentUserResponse.data.data?.course) {
+          // Store the selected course
+          localStorage.setItem('selectedCourse', currentUserResponse.data.data.course);
+        }
+      } catch (error) {
+        console.error('Error fetching updated user data:', error);
+      }
+
+      // Return success response
       return handleApiResponse({ data: responseData });
     } catch (error) {
       console.error('Profile update error:', error);
