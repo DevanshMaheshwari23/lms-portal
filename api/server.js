@@ -18,7 +18,7 @@ const port = process.env.PORT || 5001;
 // Enable CORS and JSON parsing
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://lms-portal-qz69.onrender.com', 'https://lms-portal-4dbs9szao-devanshs-projects-b9c496ea.vercel.app']
+    ? 'https://lms-portal-qz69.onrender.com'
     : 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -37,8 +37,7 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
 
@@ -724,6 +723,8 @@ app.get('/admin', (req, res) => {
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) {
     res.status(404).json({ error: 'API endpoint not found' });
+  } else if (req.path === '/admin') {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
   } else {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
   }
