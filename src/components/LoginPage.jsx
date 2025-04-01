@@ -46,7 +46,10 @@ function LoginPage() {
       }
     };
 
-    checkSession();
+    // Only check session if we're not already on the login page
+    if (!window.location.pathname.includes('/login')) {
+      checkSession();
+    }
   }, [navigate, setUser]);
 
   const handleSubmit = async (e) => {
