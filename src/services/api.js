@@ -37,12 +37,6 @@ api.interceptors.request.use(
     if (!config.url.startsWith('/api/') && !config.url.includes('/profile/')) {
       config.url = `/api${config.url}`;
     }
-
-    // Add CORS headers for cross-origin requests
-    if (config.method === 'put' || config.method === 'post') {
-      config.headers['Access-Control-Allow-Origin'] = 'https://lms-portal-qz69.onrender.com';
-      config.headers['Access-Control-Allow-Credentials'] = 'true';
-    }
     
     return config;
   },
@@ -184,6 +178,7 @@ const apiService = {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
+        withCredentials: true,
         validateStatus: function (status) {
           return status >= 200 && status < 500; // Don't reject if status is less than 500
         }
@@ -210,6 +205,16 @@ const apiService = {
       }
     } catch (error) {
       console.error('Login error:', error);
+      // Handle network errors specifically
+      if (error.code === 'ERR_NETWORK' || error.code === 'ERR_FAILED') {
+        return handleApiError({
+          response: {
+            data: {
+              message: 'Unable to connect to the server. Please check your internet connection and try again.'
+            }
+          }
+        });
+      }
       return handleApiError(error);
     }
   },
@@ -473,9 +478,7 @@ const apiService = {
 
       const response = await api.put('/profile', formData, {
         headers: {
-          'Accept': 'application/json',
-          'Access-Control-Allow-Origin': 'https://lms-portal-qz69.onrender.com',
-          'Access-Control-Allow-Credentials': 'true'
+          'Accept': 'application/json'
         },
         withCredentials: true,
         validateStatus: function (status) {
