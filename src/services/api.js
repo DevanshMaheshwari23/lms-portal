@@ -34,6 +34,10 @@ api.interceptors.request.use(
     // Ensure credentials are included
     config.withCredentials = true;
     
+    // Add CORS headers
+    config.headers['Access-Control-Allow-Origin'] = 'https://lms-portal-qz69.onrender.com';
+    config.headers['Access-Control-Allow-Credentials'] = 'true';
+    
     return config;
   },
   (error) => {
@@ -72,7 +76,7 @@ api.interceptors.response.use(
               .replace(/^ +/, '')
               .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
           });
-          // Redirect to login if not already there
+          // Only redirect if we're not already on the login page
           if (!window.location.pathname.includes('/login')) {
             window.location.href = '/login';
           }
