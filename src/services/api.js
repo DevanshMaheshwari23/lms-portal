@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://lms-portal-4zyl5i66t-devanshs-projects-b9c496ea.vercel.app/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://lms-portal-backend-qgui.onrender.com',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
@@ -15,10 +15,6 @@ api.interceptors.request.use(
     // Log the request URL in development
     if (import.meta.env.DEV) {
       console.log('Making request to:', config.url);
-    }
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
