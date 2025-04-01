@@ -43,14 +43,14 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Only fetch user if we're not on a public route
+    // Only fetch user if we're not on a public route and not already authenticated
     const publicRoutes = ['/login', '/register', '/adminlogin', '/forgot-password'];
-    if (!publicRoutes.includes(location.pathname)) {
+    if (!publicRoutes.includes(location.pathname) && !user) {
       fetchCurrentUser();
     } else {
       setLoading(false);
     }
-  }, [navigate, location]);
+  }, [navigate, location, user]);
 
   const logout = async () => {
     try {
