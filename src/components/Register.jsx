@@ -11,6 +11,7 @@ function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [currentImage, setCurrentImage] = useState(0);
   const images = [Banner1, Banner2, Banner3];
@@ -24,18 +25,33 @@ function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
     
     // Basic validation
     if (!email || !password || !confirmPassword) {
       setError('All fields are required');
+      setIsLoading(false);
       return;
     }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      setIsLoading(false);
+      return;
+    }
+
     if (password.length < 6) {
       setError('Password must be at least 6 characters long');
+      setIsLoading(false);
       return;
     }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
+      setIsLoading(false);
       return;
     }
 
@@ -46,13 +62,18 @@ function RegisterPage() {
       });
 
       if (response.success) {
-        navigate('/login');  // Redirect to login page on success
+        // Clear any existing error
+        setError('');
+        // Redirect to login page on success
+        navigate('/login');
       } else {
         setError(response.message || 'Registration failed');
       }
     } catch (err) {
       console.error('Registration error:', err);
       setError(err.message || 'An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,7 +98,7 @@ function RegisterPage() {
         <div className="left-section">
           <div className="register-card">
             <h2>Register</h2>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {error && <div className="error-message">{error}</div>}
             <form onSubmit={handleSubmit}>
               <label htmlFor="email">Email</label>
               <input
@@ -89,6 +110,7 @@ function RegisterPage() {
                 placeholder="Email"
                 required
                 autoComplete="username"
+                disabled={isLoading}
               />
 
               <label htmlFor="password">Password</label>
@@ -100,6 +122,7 @@ function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)} 
                 required
                 autoComplete="new-password"
+                disabled={isLoading}
               />
 
               <label htmlFor="confirmPassword">Confirm Password</label>
@@ -111,10 +134,15 @@ function RegisterPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)} 
                 required
                 autoComplete="new-password"
+                disabled={isLoading}
               />
 
-              <button type="submit" className="register-btn">
-                Sign Up
+              <button 
+                type="submit" 
+                className={`register-btn ${isLoading ? 'loading' : ''}`}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Signing up...' : 'Sign Up'}
               </button>
             </form>
             <div className="login">

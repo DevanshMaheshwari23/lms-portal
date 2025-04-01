@@ -42,8 +42,12 @@ api.interceptors.request.use(
     delete config.headers['Access-Control-Allow-Origin'];
     delete config.headers['Access-Control-Allow-Credentials'];
 
-    // Try to refresh session before making the request
-    if (config.url !== '/api/current-user' && config.url !== '/api/login') {
+    // Only try to refresh session for authenticated endpoints
+    if (config.url !== '/api/current-user' && 
+        config.url !== '/api/login' && 
+        config.url !== '/api/register' && 
+        config.url !== '/api/request-otp' && 
+        config.url !== '/api/verify-otp') {
       try {
         const sessionRefreshed = await sessionManager.refreshSession();
         if (!sessionRefreshed) {

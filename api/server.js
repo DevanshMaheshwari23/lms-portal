@@ -29,6 +29,9 @@ app.use(cors({
 // Add additional headers middleware
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer');
   res.header('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range');
   res.header('Vary', 'Origin, Accept-Encoding');
   next();
@@ -39,14 +42,14 @@ app.use(bodyParser.json());
 // Session middleware configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'secret-key',
-  resave: true,
+  resave: false,
   saveUninitialized: false,
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    sameSite: 'lax',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+    path: '/'
   }
 }));
 
@@ -333,27 +336,75 @@ app.post('/api/verify-otp', async (req, res) => {
 
 // Register endpoint
 app.post('/api/register', async (req, res) => {
-  let { email, password } = req.body;
-  email = email.trim().toLowerCase();
-  password = password.trim();
-  console.log('Registering user:', email);
-
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    console.log('User already exists:', email);
-    return res.status(400).json({ success: false, message: 'User already exists' });
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = new User({ email, password: hashedPassword });
-
   try {
+    let { email, password } = req.body;
+    email = email.trim().toLowerCase();
+    password = password.trim();
+    console.log('Registering user:', email);
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email and password are required' 
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid email format' 
+      });
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Password must be at least 6 characters long' 
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      console.log('User already exists:', email);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User already exists' 
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Create new user
+    const newUser = new User({ email, password: hashedPassword });
     await newUser.save();
+
+    // Create profile for the user
+    const newProfile = new Profile({
+      email,
+      name: email.split('@')[0], // Use part of email as default name
+      selectedCourse: null,
+      profileImage: 'default-profile.png'
+    });
+    await newProfile.save();
+
     console.log('User registered successfully:', email);
-    res.status(201).json({ success: true, message: 'User registered successfully' });
+    res.status(201).json({ 
+      success: true, 
+      message: 'User registered successfully' 
+    });
   } catch (err) {
     console.error('Error registering user:', err);
-    res.status(500).json({ success: false, message: 'Error registering user', error: err });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error registering user', 
+      error: err.message 
+    });
   }
 });
 
