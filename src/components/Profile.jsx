@@ -97,15 +97,17 @@ function Profile() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('course', selectedCourse);
-    if (image) {
-      formData.append('profileImage', image);
-    }
-    formData.append('email', user.email);
-
     try {
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('course', selectedCourse);
+      formData.append('email', user.email);
+      
+      // Only append the image if it's a new file
+      if (image instanceof File) {
+        formData.append('profileImage', image);
+      }
+
       let response;
       if (existingProfile) {
         response = await apiService.updateProfile(formData);
@@ -114,7 +116,11 @@ function Profile() {
       }
 
       if (response.success) {
-        setUser(response.data);
+        // Update the user context with the new profile data
+        setUser(prevUser => ({
+          ...prevUser,
+          ...response.data
+        }));
         navigate(`/home?courseId=${selectedCourse}`);
       } else {
         setError(response.message || 'Error creating/updating profile');
