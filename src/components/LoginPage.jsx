@@ -27,33 +27,41 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    
     if (!email || !password) {
       setError('Email and password are required');
       return;
     }
+
     try {
       const response = await apiService.login({ email, password });
       
-      if (response.data.success) {
+      if (response.success) {
         // Store email in localStorage for fallback
         localStorage.setItem('userEmail', email);
+        
         // Fetch the user profile after successful login
         const profileResponse = await apiService.getProfile(email);
-        const profile = profileResponse.data;
-        setUser(profile);
-        
-        // Navigate based on course selection
-        if (profile && profile.selectedCourse) {
-          navigate('/home');
+        if (profileResponse.success) {
+          const profile = profileResponse.data;
+          setUser(profile);
+          
+          // Navigate based on course selection
+          if (profile && profile.selectedCourse) {
+            navigate('/home');
+          } else {
+            navigate('/profile');
+          }
         } else {
-          navigate('/profile');
+          setError(profileResponse.message || 'Error fetching profile');
         }
       } else {
-        setError(response.data.message || "Login failed");
+        setError(response.message || 'Login failed');
       }
     } catch (err) {
-      console.error(err);
-      setError("An error occurred. Please try again.");
+      console.error('Login error:', err);
+      setError(err.message || 'An error occurred. Please try again.');
     }
   };
 
