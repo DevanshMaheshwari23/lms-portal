@@ -32,18 +32,18 @@ const ForgotPassword = () => {
     setMessage('');
 
     try {
-      const response = await apiService.post('/request-otp', { email });
+      const response = await apiService.requestOtp(email);
       setLoading(false);
       
-      if (response.data.success) {
-        setMessage('OTP sent to your email(Check in spam folder)');
+      if (response.success) {
+        setMessage('OTP sent to your email (Check spam folder)');
       } else {
-        setMessage(response.data.message || 'Failed to send OTP');
+        setMessage(response.message || 'Failed to send OTP');
       }
     } catch (error) {
       setLoading(false);
-      console.error('Error requesting OTP', error);
-      setMessage('An error occurred while requesting OTP');
+      console.error('Error requesting OTP:', error);
+      setMessage(error.message || 'An error occurred while requesting OTP');
     }
   };
 
@@ -60,25 +60,25 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await apiService.post('/verify-otp', {
+      const response = await apiService.verifyOtp({
         email,
         otp,
         newPassword,
       });
       setLoading(false);
 
-      if (response.data.success) {
+      if (response.success) {
         setMessage('Password updated successfully');
         setTimeout(() => {
           navigate('/login');
         }, 2000);
       } else {
-        setMessage(response.data.message || 'OTP verification failed');
+        setMessage(response.message || 'OTP verification failed');
       }
     } catch (error) {
       setLoading(false);
-      console.error('Error verifying OTP or updating password', error);
-      setMessage('An error occurred while verifying OTP or updating the password');
+      console.error('Error verifying OTP:', error);
+      setMessage(error.message || 'An error occurred while verifying OTP or updating the password');
     }
   };
 
@@ -126,7 +126,7 @@ const ForgotPassword = () => {
             </form>
 
             {/* Step 2: Enter OTP and new password */}
-            {message === 'OTP sent to your email(Check in spam folder)' && (
+            {message === 'OTP sent to your email (Check spam folder)' && (
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label htmlFor="otp">Verification Code</label>
