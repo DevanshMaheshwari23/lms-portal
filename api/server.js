@@ -23,7 +23,8 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400 // Cache preflight requests for 24 hours
 }));
 app.use(bodyParser.json());
 
@@ -719,10 +720,10 @@ app.get('/admin', (req, res) => {
   }
 });
 
-// Catch-all route for client-side routing
+// Update the catch-all route to handle client-side routing properly
 app.get('*', (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
-    res.redirect('/');
+  if (req.path.startsWith('/api/')) {
+    res.status(404).json({ error: 'API endpoint not found' });
   } else {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
   }
