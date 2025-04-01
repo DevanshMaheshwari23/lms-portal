@@ -103,7 +103,11 @@ function LoginPage() {
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'An error occurred. Please try again.');
+      if (err.message === 'Network error. Please check your connection and try again.') {
+        setError('Unable to connect to the server. Please check your internet connection and try again.');
+      } else {
+        setError(err.message || 'An error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
