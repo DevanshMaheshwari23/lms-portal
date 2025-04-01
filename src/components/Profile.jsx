@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './Profile.css';
 import api from '../services/api';
@@ -24,8 +24,8 @@ function Profile() {
           setCourses(response.data);
         }
       } catch (err) {
-        setError('Error fetching courses');
         console.error('Error fetching courses:', err);
+        setError('Error fetching courses');
       }
     };
 
@@ -35,7 +35,11 @@ function Profile() {
           setError('User email not found.');
           return;
         }
-        const response = await api.get(`/profile?email=${user.email}`);
+        const response = await api.get('/profile', {
+          params: {
+            email: user.email
+          }
+        });
         if (response.data) {
           setExistingProfile(response.data);
           setName(response.data.name);
