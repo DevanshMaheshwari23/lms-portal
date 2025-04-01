@@ -143,14 +143,6 @@ const apiService = {
   // Auth
   login: async (credentials) => {
     try {
-      // Remove any existing session data first
-      localStorage.removeItem('userEmail');
-      document.cookie.split(';').forEach(cookie => {
-        document.cookie = cookie
-          .replace(/^ +/, '')
-          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-      });
-
       const response = await api.post('/login', credentials);
       
       if (response.data.success) {
@@ -192,13 +184,7 @@ const apiService = {
   },
   getCurrentUser: async () => {
     try {
-      // First check if we have a stored email
-      const email = localStorage.getItem('userEmail');
-      if (!email) {
-        throw new Error('No user email found');
-      }
-
-      // Try to get the current user
+      // Try to get the current user without checking email first
       const response = await api.get('/current-user');
       return handleApiResponse(response);
     } catch (error) {
