@@ -45,14 +45,14 @@ function RegisterPage() {
         password
       });
 
-      if (response.data.success) {
+      if (response.success) {
         navigate('/login');  // Redirect to login page on success
       } else {
-        setError(response.data.message || 'Registration failed');
+        setError(response.message || 'Registration failed');
       }
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.response?.data?.message || 'An error occurred. Please try again.');
+      setError(err.message || 'An error occurred. Please try again.');
     }
   };
 
@@ -83,10 +83,12 @@ function RegisterPage() {
               <input
                 id="email"
                 type="email"
-                placeholder="username@gmail.com"
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Email"
                 required
+                autoComplete="username"
               />
 
               <label htmlFor="password">Password</label>
