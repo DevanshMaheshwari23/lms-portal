@@ -21,6 +21,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -29,7 +30,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error);
+    console.error('API Error:', error.response?.data || error.message);
     if (error.response) {
       switch (error.response.status) {
         case 401:
@@ -227,7 +228,11 @@ const apiService = {
   },
   updateProfile: async (profileData) => {
     try {
-      const response = await api.put('/api/profile', profileData);
+      const response = await api.put('/api/profile', profileData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       return handleApiResponse(response);
     } catch (error) {
       console.error('Error updating profile:', error);
