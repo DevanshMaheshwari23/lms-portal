@@ -1,6 +1,5 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import "./LoginPage.css";
 import Banner1 from "../assets/Banner1.jpg";
@@ -30,6 +29,14 @@ function LoginPage() {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // Clear any existing session data first
+        localStorage.removeItem('userEmail');
+        document.cookie.split(';').forEach(cookie => {
+          document.cookie = cookie
+            .replace(/^ +/, '')
+            .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+        });
+
         // Try to get current user
         const response = await apiService.getCurrentUser();
         if (response.success) {
@@ -64,6 +71,14 @@ function LoginPage() {
     }
 
     try {
+      // Clear any existing session data first
+      localStorage.removeItem('userEmail');
+      document.cookie.split(';').forEach(cookie => {
+        document.cookie = cookie
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
+
       // First try to login
       const loginResponse = await apiService.login({ email, password });
       
@@ -143,24 +158,34 @@ function LoginPage() {
                 className="sign-in-btn"
                 disabled={isLoading}
               >
-                {isLoading ? 'Signing in...' : 'Sign in'}
+                {isLoading ? (
+                  <>
+                    <span className="loading-spinner"></span>
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
               </button>
             </form>
-            <div className="register">
-              Not a member? <Link to="/register">Register for free</Link>
+            <div className="register-link">
+              <p>Don't have an account? <Link to="/register">Register</Link></p>
             </div>
           </div>
         </div>
+
         <div className="right-section">
           <div className="hero-image">
-            {images.map((image, index) => (
-              <img
-                key={index}
-                src={image}
-                alt="Banner"
-                className={`carousel-image ${currentImage === index ? "visible" : ""}`}
-              />
-            ))}
+            <img
+              src={images[currentImage]}
+              alt="Learning Platform"
+              style={{
+                width: '100%',
+                height: 'auto',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              }}
+            />
           </div>
         </div>
       </div>
