@@ -84,6 +84,7 @@ const sessionManager = {
     localStorage.removeItem('userEmail');
     localStorage.removeItem('selectedCourse');
     localStorage.removeItem('isAdmin');
+    localStorage.removeItem('hasProfile');
     
     // Clear all cookies
     document.cookie.split(';').forEach(cookie => {
@@ -108,6 +109,9 @@ const sessionManager = {
     }
     if (userData.isAdmin) {
       localStorage.setItem('isAdmin', 'true');
+    }
+    if (userData.hasProfile !== undefined) {
+      localStorage.setItem('hasProfile', userData.hasProfile.toString());
     }
   },
 
@@ -293,7 +297,13 @@ const apiService = {
           if (currentUserResponse.data.success && currentUserResponse.data.data) {
             // Update session with verified user data
             sessionManager.saveSession(currentUserResponse.data.data);
-            return handleApiResponse({ data: responseData });
+            
+            // Return success with user data for redirection
+            return {
+              success: true,
+              data: currentUserResponse.data.data,
+              message: 'Login successful'
+            };
           } else {
             throw new Error('Session verification failed');
           }

@@ -466,7 +466,8 @@ app.post('/api/login', async (req, res) => {
         email: user.email,
         name: profile.name,
         selectedCourse: profile.selectedCourse,
-        profileImage: profile.profileImage
+        profileImage: profile.profileImage,
+        hasProfile: !!profile.name && profile.name !== email.split('@')[0]
       };
 
       // Save session explicitly
@@ -499,7 +500,8 @@ app.post('/api/login', async (req, res) => {
             email: user.email,
             name: profile.name,
             selectedCourse: profile.selectedCourse,
-            profileImage: profile.profileImage
+            profileImage: profile.profileImage,
+            hasProfile: !!profile.name && profile.name !== email.split('@')[0]
           }
         });
       });
