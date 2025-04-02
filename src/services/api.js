@@ -80,21 +80,34 @@ api.interceptors.request.use(
 // Add session management functions
 const sessionManager = {
   clearSession: () => {
+    // Clear localStorage
     localStorage.removeItem('userEmail');
     localStorage.removeItem('selectedCourse');
+    localStorage.removeItem('isAdmin');
+    
     // Clear all cookies
     document.cookie.split(';').forEach(cookie => {
       const [name] = cookie.split('=');
       document.cookie = `${name.trim()}=;expires=${new Date().toUTCString()};path=/;domain=.onrender.com;secure;samesite=none`;
     });
+    
+    // Clear any other session-related data
+    sessionStorage.clear();
   },
 
   saveSession: (userData) => {
     if (userData.email) {
       localStorage.setItem('userEmail', userData.email);
     }
-    if (userData.course) {
-      localStorage.setItem('selectedCourse', userData.course);
+    if (userData.selectedCourse) {
+      localStorage.setItem('selectedCourse', 
+        typeof userData.selectedCourse === 'object' 
+          ? userData.selectedCourse._id 
+          : userData.selectedCourse
+      );
+    }
+    if (userData.isAdmin) {
+      localStorage.setItem('isAdmin', 'true');
     }
   },
 
@@ -121,6 +134,7 @@ const sessionManager = {
       return false;
     } catch (error) {
       console.error('Session refresh error:', error);
+      sessionManager.clearSession();
       return false;
     }
   }
@@ -268,11 +282,18 @@ const apiService = {
         sessionManager.saveSession(responseData.data);
         
         // Verify session by getting current user
-        const currentUserResponse = await api.get('/current-user');
-        if (currentUserResponse.data.success) {
-          return handleApiResponse({ data: responseData });
-        } else {
-          throw new Error('Session verification failed');
+        try {
+          const currentUserResponse = await api.get('/current-user');
+          if (currentUserResponse.data.success && currentUserResponse.data.data) {
+            return handleApiResponse({ data: responseData });
+          } else {
+            throw new Error('Session verification failed');
+          }
+        } catch (error) {
+          console.error('Session verification error:', error);
+          // If session verification fails, clear the session and throw error
+          sessionManager.clearSession();
+          throw new Error('Session verification failed. Please try logging in again.');
         }
       } else {
         return handleApiError({ response: { data: responseData } });
