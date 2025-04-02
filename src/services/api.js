@@ -38,9 +38,11 @@ api.interceptors.request.use(
       config.url = `/api${config.url}`;
     }
 
-    // Remove any CORS headers from client-side requests
-    delete config.headers['Access-Control-Allow-Origin'];
-    delete config.headers['Access-Control-Allow-Credentials'];
+    // Add CORS headers for cross-origin requests
+    if (window.location.hostname !== 'lms-portal-backend-qgui.onrender.com') {
+      config.headers['Access-Control-Allow-Origin'] = 'https://lms-portal-qz69.onrender.com';
+      config.headers['Access-Control-Allow-Credentials'] = 'true';
+    }
 
     return config;
   },
@@ -59,10 +61,11 @@ const sessionManager = {
     localStorage.removeItem('isAdmin');
     localStorage.removeItem('hasProfile');
     
-    // Clear all cookies
+    // Clear all cookies with specific domain
     document.cookie.split(';').forEach(cookie => {
       const [name] = cookie.split('=');
-      document.cookie = `${name.trim()}=;expires=${new Date().toUTCString()};path=/;domain=.onrender.com;secure;samesite=none`;
+      document.cookie = `${name.trim()}=;expires=${new Date().toUTCString()};path=/;domain=lms-portal-backend-qgui.onrender.com;secure;samesite=none`;
+      document.cookie = `${name.trim()}=;expires=${new Date().toUTCString()};path=/;domain=lms-portal-qz69.onrender.com;secure;samesite=none`;
     });
     
     // Clear any other session-related data
