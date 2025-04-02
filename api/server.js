@@ -68,7 +68,7 @@ app.use(session({
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/',
-    domain: 'lms-portal-backend-qgui.onrender.com'
+    domain: '.onrender.com' // Allow cookies across subdomains
   },
   name: 'lms_session',
   proxy: true,
@@ -487,39 +487,43 @@ app.post('/api/login', async (req, res) => {
       };
 
       // Save session explicitly
-      req.session.save((err) => {
-        if (err) {
-          console.error('Error saving session:', err);
-          return res.status(500).json({ success: false, message: 'Error creating session' });
-        }
-
-        // Set session cookie explicitly
-        res.cookie('lms_session', req.session.id, {
-          secure: true,
-          sameSite: 'none',
-          httpOnly: true,
-          maxAge: 24 * 60 * 60 * 1000, // 24 hours
-          path: '/',
-          domain: 'lms-portal-backend-qgui.onrender.com'
-        });
-
-        // Set additional headers for security
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('X-Frame-Options', 'DENY');
-        res.setHeader('X-XSS-Protection', '1; mode=block');
-        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-        console.log('Login successful for:', email);
-        return res.json({ 
-          success: true,
-          data: {
-            email: user.email,
-            name: profile.name,
-            selectedCourse: profile.selectedCourse,
-            profileImage: profile.profileImage,
-            hasProfile: !!profile.name && profile.name !== email.split('@')[0]
+      await new Promise((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Error saving session:', err);
+            reject(err);
+          } else {
+            resolve();
           }
         });
+      });
+
+      // Set session cookie explicitly
+      res.cookie('lms_session', req.session.id, {
+        secure: true,
+        sameSite: 'none',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        path: '/',
+        domain: '.onrender.com' // Allow cookies across subdomains
+      });
+
+      // Set additional headers for security
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('X-XSS-Protection', '1; mode=block');
+      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+      console.log('Login successful for:', email);
+      return res.json({ 
+        success: true,
+        data: {
+          email: user.email,
+          name: profile.name,
+          selectedCourse: profile.selectedCourse,
+          profileImage: profile.profileImage,
+          hasProfile: !!profile.name && profile.name !== email.split('@')[0]
+        }
       });
     } else {
       console.log('Invalid credentials for:', email);
@@ -578,7 +582,7 @@ app.get('/api/current-user', async (req, res) => {
           httpOnly: true,
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
           path: '/',
-          domain: 'lms-portal-backend-qgui.onrender.com'
+          domain: '.onrender.com' // Allow cookies across subdomains
         });
 
         // Return the updated session user data

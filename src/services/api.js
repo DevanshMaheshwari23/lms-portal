@@ -249,7 +249,7 @@ const apiService = {
         sessionManager.saveSession(responseData.data);
         
         // Wait a short moment to ensure session is properly set
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Verify session by getting current user
         try {
