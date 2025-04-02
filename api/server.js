@@ -94,6 +94,7 @@ app.set('trust proxy', 1);
 app.use((req, res, next) => {
   console.log('Session ID:', req.sessionID);
   console.log('Session:', req.session);
+  console.log('Cookies:', req.headers.cookie);
   next();
 });
 
@@ -548,6 +549,8 @@ app.post('/api/login', async (req, res) => {
 // Endpoint to get current user from session
 app.get('/api/current-user', async (req, res) => {
   console.log('Current user request - Session:', req.session);
+  console.log('Session ID:', req.sessionID);
+  console.log('Cookies:', req.headers.cookie);
   
   if (req.session && req.session.user) {
     try {
@@ -557,12 +560,14 @@ app.get('/api/current-user', async (req, res) => {
       // Check if the email is banned
       const banned = await BannedEmail.findOne({ email });
       if (banned) {
+        console.log('User is banned:', email);
         return res.status(401).json({ success: false, message: 'This account has been banned.' });
       }
       
       // Get the latest user data from the database
       const user = await User.findOne({ email });
       if (!user) {
+        console.log('User not found:', email);
         return res.status(401).json({ success: false, message: 'User not found' });
       }
 
@@ -579,27 +584,31 @@ app.get('/api/current-user', async (req, res) => {
       };
 
       // Save session explicitly
-      req.session.save((err) => {
-        if (err) {
-          console.error('Error saving session:', err);
-          return res.status(500).json({ success: false, message: 'Error saving session' });
-        }
-
-        // Set session cookie explicitly
-        res.cookie('lms_session', req.session.id, {
-          secure: true,
-          sameSite: 'none',
-          httpOnly: true,
-          maxAge: 24 * 60 * 60 * 1000, // 24 hours
-          path: '/',
-          domain: '.onrender.com' // Allow cookies across subdomains
+      await new Promise((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Error saving session:', err);
+            reject(err);
+          } else {
+            resolve();
+          }
         });
+      });
 
-        // Return the updated session user data
-        return res.json({ 
-          success: true,
-          data: req.session.user
-        });
+      // Set session cookie explicitly
+      res.cookie('lms_session', req.session.id, {
+        secure: true,
+        sameSite: 'none',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        path: '/',
+        domain: '.onrender.com' // Allow cookies across subdomains
+      });
+
+      // Return the updated session user data
+      return res.json({ 
+        success: true,
+        data: req.session.user
       });
     } catch (err) {
       console.error('Error fetching user data:', err);
@@ -608,6 +617,7 @@ app.get('/api/current-user', async (req, res) => {
   }
   
   // If no session or user, clear any existing session
+  console.log('No valid session found, destroying session');
   req.session.destroy((err) => {
     if (err) {
       console.error('Error destroying session:', err);
