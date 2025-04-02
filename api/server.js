@@ -8,6 +8,11 @@ import nodemailer from 'nodemailer';
 import multer from 'multer';
 import path from 'path';
 import session from 'express-session';
+import { fileURLToPath } from 'url';
+
+// ES module path resolution
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -63,7 +68,7 @@ app.use(session({
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/',
-    domain: '.onrender.com'
+    domain: 'lms-portal-backend-qgui.onrender.com'
   },
   name: 'lms_session',
   proxy: true,
@@ -83,7 +88,7 @@ app.use((req, res, next) => {
 });
 
 // Serve static files from the "uploads" folder so that images can be accessed via URL
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 const mongoURI = process.env.mongoURI;
 
@@ -495,7 +500,7 @@ app.post('/api/login', async (req, res) => {
           httpOnly: true,
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
           path: '/',
-          domain: '.onrender.com'
+          domain: 'lms-portal-backend-qgui.onrender.com'
         });
 
         // Set additional headers for security
@@ -573,7 +578,7 @@ app.get('/api/current-user', async (req, res) => {
           httpOnly: true,
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
           path: '/',
-          domain: '.onrender.com'
+          domain: 'lms-portal-backend-qgui.onrender.com'
         });
 
         // Return the updated session user data
@@ -913,7 +918,7 @@ app.post('/api/admin/login', async (req, res) => {
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         path: '/',
-        domain: '.onrender.com'
+        domain: 'lms-portal-backend-qgui.onrender.com'
       });
 
       // Set additional headers for security
