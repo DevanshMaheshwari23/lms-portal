@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: lms-portal-frontend
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://lms-portal-backend-qgui.onrender.com
+      - key: NODE_ENV
+        value: production
+    headers:
+      - path: /*
+        name: Access-Control-Allow-Origin
+        value: https://lms-portal-qz69.onrender.com
+      - path: /*
+        name: Access-Control-Allow-Methods
+        value: GET, POST, PUT, DELETE, OPTIONS
+      - path: /*
+        name: Access-Control-Allow-Headers
+        value: Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer
+      - path: /*
+        name: Access-Control-Allow-Credentials
+        value: "true"
+      - path: /*
+        name: Access-Control-Expose-Headers
+        value: Content-Range, X-Content-Range, Set-Cookie
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-XSS-Protection
+        value: "1; mode=block"
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin 

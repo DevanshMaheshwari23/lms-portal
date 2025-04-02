@@ -929,36 +929,40 @@ app.post('/api/admin/login', async (req, res) => {
     };
 
     // Save session explicitly
-    req.session.save((err) => {
-      if (err) {
-        console.error('Error saving admin session:', err);
-        return res.status(500).json({ success: false, message: 'Error creating session' });
-      }
-
-      // Set session cookie explicitly
-      res.cookie('lms_session', req.session.id, {
-        secure: true,
-        sameSite: 'none',
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        path: '/',
-        domain: 'lms-portal-backend-qgui.onrender.com'
-      });
-
-      // Set additional headers for security
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'DENY');
-      res.setHeader('X-XSS-Protection', '1; mode=block');
-      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-      console.log('Admin login successful');
-      return res.json({ 
-        success: true,
-        data: {
-          email,
-          isAdmin: true
+    await new Promise((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) {
+          console.error('Error saving admin session:', err);
+          reject(err);
+        } else {
+          resolve();
         }
       });
+    });
+
+    // Set session cookie explicitly
+    res.cookie('lms_session', req.session.id, {
+      secure: true,
+      sameSite: 'none',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/',
+      domain: '.onrender.com' // Allow cookies across subdomains
+    });
+
+    // Set additional headers for security
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+    console.log('Admin login successful');
+    return res.json({ 
+      success: true,
+      data: {
+        email,
+        isAdmin: true
+      }
     });
   } else {
     console.log('Invalid admin credentials');

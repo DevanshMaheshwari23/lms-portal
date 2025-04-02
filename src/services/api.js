@@ -62,8 +62,7 @@ const sessionManager = {
     // Clear all cookies with specific domain
     document.cookie.split(';').forEach(cookie => {
       const [name] = cookie.split('=');
-      document.cookie = `${name.trim()}=;expires=${new Date().toUTCString()};path=/;domain=lms-portal-backend-qgui.onrender.com;secure;samesite=none`;
-      document.cookie = `${name.trim()}=;expires=${new Date().toUTCString()};path=/;domain=lms-portal-qz69.onrender.com;secure;samesite=none`;
+      document.cookie = `${name.trim()}=;expires=${new Date().toUTCString()};path=/;domain=.onrender.com;secure;samesite=none`;
     });
     
     // Clear any other session-related data
