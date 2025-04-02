@@ -8,6 +8,7 @@ import nodemailer from 'nodemailer';
 import multer from 'multer';
 import path from 'path';
 import session from 'express-session';
+import MongoStore from 'connect-mongo';
 import { fileURLToPath } from 'url';
 
 // ES module path resolution
@@ -74,7 +75,16 @@ app.use(session({
   proxy: true,
   rolling: true,
   unset: 'destroy',
-  store: new session.MemoryStore()
+  store: MongoStore.create({
+    mongoUrl: process.env.mongoURI,
+    collectionName: 'sessions',
+    ttl: 24 * 60 * 60, // 24 hours in seconds
+    autoRemove: 'native',
+    autoRemoveInterval: 3600, // Check for expired sessions every hour
+    crypto: {
+      secret: process.env.SESSION_SECRET || 'secret-key'
+    }
+  })
 }));
 
 // Add trust proxy for secure cookies
