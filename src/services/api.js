@@ -283,8 +283,16 @@ const apiService = {
         
         // Verify session by getting current user
         try {
-          const currentUserResponse = await api.get('/current-user');
+          const currentUserResponse = await api.get('/current-user', {
+            withCredentials: true,
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+          
           if (currentUserResponse.data.success && currentUserResponse.data.data) {
+            // Update session with verified user data
+            sessionManager.saveSession(currentUserResponse.data.data);
             return handleApiResponse({ data: responseData });
           } else {
             throw new Error('Session verification failed');
