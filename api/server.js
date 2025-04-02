@@ -52,24 +52,40 @@ app.use(bodyParser.json());
 // Session middleware configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'secret-key',
-  resave: false,
+  resave: true,
   saveUninitialized: false,
   cookie: { 
-    secure: true, // Always use secure cookies
-    sameSite: 'none', // Allow cross-site cookie sending
+    secure: true,
+    sameSite: 'none',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/',
-    domain: '.onrender.com' // Set domain for production
+    domain: '.onrender.com'
   },
-  name: 'lms_session', // Use a custom session name
-  proxy: true, // Trust the proxy
-  rolling: true, // Reset the cookie maxAge on every response
-  unset: 'destroy' // Destroy the session when unset
+  name: 'lms_session',
+  proxy: true,
+  rolling: true,
+  unset: 'destroy',
+  store: new session.MemoryStore(),
+  cookie: {
+    secure: true,
+    sameSite: 'none',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+    path: '/',
+    domain: '.onrender.com'
+  }
 }));
 
 // Add trust proxy for secure cookies
 app.set('trust proxy', 1);
+
+// Add session debugging middleware
+app.use((req, res, next) => {
+  console.log('Session ID:', req.sessionID);
+  console.log('Session:', req.session);
+  next();
+});
 
 // Serve static files from the "uploads" folder so that images can be accessed via URL
 app.use('/uploads', express.static('uploads'));
@@ -530,10 +546,46 @@ app.get('/api/current-user', async (req, res) => {
         return res.status(401).json({ success: false, message: 'This account has been banned.' });
       }
       
-      // Return the session user data
-      return res.json({ 
-        success: true,
-        data: req.session.user
+      // Get the latest user data from the database
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(401).json({ success: false, message: 'User not found' });
+      }
+
+      // Get the latest profile data
+      const profile = await Profile.findOne({ email });
+      
+      // Update session with latest data
+      req.session.user = {
+        email: user.email,
+        name: profile ? profile.name : email.split('@')[0],
+        selectedCourse: profile ? profile.selectedCourse : null,
+        profileImage: profile ? profile.profileImage : 'default-profile.png',
+        hasProfile: profile ? (!!profile.name && profile.name !== email.split('@')[0]) : false
+      };
+
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error('Error saving session:', err);
+          return res.status(500).json({ success: false, message: 'Error saving session' });
+        }
+
+        // Set session cookie explicitly
+        res.cookie('lms_session', req.session.id, {
+          secure: true,
+          sameSite: 'none',
+          httpOnly: true,
+          maxAge: 24 * 60 * 60 * 1000, // 24 hours
+          path: '/',
+          domain: '.onrender.com'
+        });
+
+        // Return the updated session user data
+        return res.json({ 
+          success: true,
+          data: req.session.user
+        });
       });
     } catch (err) {
       console.error('Error fetching user data:', err);

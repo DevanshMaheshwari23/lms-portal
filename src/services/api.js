@@ -261,6 +261,7 @@ const apiService = {
       // Clear any existing session data
       sessionManager.clearSession();
 
+      // Make login request
       const response = await api.post('/login', credentials, {
         headers: {
           'Content-Type': 'application/json',
@@ -282,8 +283,11 @@ const apiService = {
       }
       
       if (responseData.success) {
-        // Store user data in session
+        // Store initial user data in session
         sessionManager.saveSession(responseData.data);
+        
+        // Wait a short moment to ensure session is properly set
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Verify session by getting current user
         try {
