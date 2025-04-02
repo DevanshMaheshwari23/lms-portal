@@ -38,11 +38,9 @@ api.interceptors.request.use(
       config.url = `/api${config.url}`;
     }
 
-    // Add CORS headers for cross-origin requests
-    if (window.location.hostname !== 'lms-portal-backend-qgui.onrender.com') {
-      config.headers['Access-Control-Allow-Origin'] = 'https://lms-portal-qz69.onrender.com';
-      config.headers['Access-Control-Allow-Credentials'] = 'true';
-    }
+    // Remove any CORS headers from client-side requests
+    delete config.headers['Access-Control-Allow-Origin'];
+    delete config.headers['Access-Control-Allow-Credentials'];
 
     return config;
   },

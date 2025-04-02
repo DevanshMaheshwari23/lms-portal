@@ -22,7 +22,7 @@ const port = process.env.PORT || 5001;
 
 // Enable CORS and JSON parsing
 app.use(cors({
-  origin: ['https://lms-portal-qz69.onrender.com', 'http://localhost:5173'],
+  origin: ['https://lms-portal-qz69.onrender.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Referer'],
@@ -34,7 +34,7 @@ app.use(cors({
 // Add additional headers middleware
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (['https://lms-portal-qz69.onrender.com', 'http://localhost:5173'].includes(origin)) {
+  if (['https://lms-portal-qz69.onrender.com'].includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
