@@ -47,6 +47,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Handle preflight requests
+app.options('*', cors());
+
 app.use(bodyParser.json());
 
 // Session middleware configuration
@@ -66,15 +69,7 @@ app.use(session({
   proxy: true,
   rolling: true,
   unset: 'destroy',
-  store: new session.MemoryStore(),
-  cookie: {
-    secure: true,
-    sameSite: 'none',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    path: '/',
-    domain: '.onrender.com'
-  }
+  store: new session.MemoryStore()
 }));
 
 // Add trust proxy for secure cookies

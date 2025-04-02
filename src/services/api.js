@@ -42,33 +42,6 @@ api.interceptors.request.use(
     delete config.headers['Access-Control-Allow-Origin'];
     delete config.headers['Access-Control-Allow-Credentials'];
 
-    // Only try to refresh session for authenticated endpoints
-    if (config.url !== '/api/current-user' && 
-        config.url !== '/api/login' && 
-        config.url !== '/api/register' && 
-        config.url !== '/api/request-otp' && 
-        config.url !== '/api/verify-otp') {
-      try {
-        const sessionRefreshed = await sessionManager.refreshSession();
-        if (!sessionRefreshed) {
-          sessionManager.clearSession();
-          // Only redirect if not already on login page
-          if (!window.location.pathname.includes('/login')) {
-            sessionManager.redirectToLogin();
-          }
-          return Promise.reject(new Error('Session expired. Please log in again.'));
-        }
-      } catch (error) {
-        console.error('Session refresh error:', error);
-        sessionManager.clearSession();
-        // Only redirect if not already on login page
-        if (!window.location.pathname.includes('/login')) {
-          sessionManager.redirectToLogin();
-        }
-        return Promise.reject(new Error('Session expired. Please log in again.'));
-      }
-    }
-    
     return config;
   },
   (error) => {
@@ -147,18 +120,6 @@ const sessionManager = {
 // Add response interceptor to handle errors
 api.interceptors.response.use(
   (response) => {
-    // If the response contains an image URL, update it to use the full backend URL
-    if (response.data && response.data.profileImage) {
-      // Handle default profile image
-      if (response.data.profileImage === 'default-profile.png') {
-        response.data.profileImage = '/default-profile.png';
-      }
-      // Ensure the URL starts with a slash
-      const imagePath = response.data.profileImage.startsWith('/') 
-        ? response.data.profileImage 
-        : `/${response.data.profileImage}`;
-      response.data.profileImage = `${import.meta.env.VITE_API_URL}${imagePath}`;
-    }
     return response;
   },
   (error) => {
